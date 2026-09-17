@@ -1253,18 +1253,19 @@
       }
 
       // Load local secure config if present (e.g. characall_config.json)
+      let localConfigFile = null;
       if (isElectron) {
         try {
           const fsMod = require('fs');
           const pathMod = require('path');
           const cfgPath = pathMod.join(__dirname, 'characall_config.json');
           if (fsMod.existsSync(cfgPath)) {
-            const fileCfg = JSON.parse(fsMod.readFileSync(cfgPath, 'utf8'));
-            if (fileCfg.apiKey) {
-              aiConfig.provider = fileCfg.provider || 'gemini';
-              aiConfig.apiKey = fileCfg.apiKey;
-              if (fileCfg.geminiModel) aiConfig.geminiModel = fileCfg.geminiModel;
-              if (fileCfg.cfAccountId) aiConfig.cfAccountId = fileCfg.cfAccountId;
+            localConfigFile = JSON.parse(fsMod.readFileSync(cfgPath, 'utf8'));
+            if (localConfigFile.apiKey) {
+              aiConfig.provider = localConfigFile.provider || 'gemini';
+              aiConfig.apiKey = localConfigFile.apiKey;
+              if (localConfigFile.geminiModel) aiConfig.geminiModel = localConfigFile.geminiModel;
+              if (localConfigFile.cfAccountId) aiConfig.cfAccountId = localConfigFile.cfAccountId;
             }
           }
         } catch(e) {
@@ -1274,6 +1275,13 @@
 
       // Load saved state from localStorage
       loadSavedState();
+
+      // Enforce local secure config precedence over stale localStorage
+      if (localConfigFile && localConfigFile.apiKey) {
+        aiConfig.provider = localConfigFile.provider || 'gemini';
+        aiConfig.apiKey = localConfigFile.apiKey;
+        if (localConfigFile.geminiModel) aiConfig.geminiModel = localConfigFile.geminiModel;
+      }
 
       // Render theme swatches and bg presets inside Menu
       renderThemeSwatches();
@@ -2016,8 +2024,11 @@
           },
           contents: contents,
           generationConfig: {
-            maxOutputTokens: 80,
-            temperature: 0.8
+            maxOutputTokens: 300,
+            temperature: 0.8,
+            thinkingConfig: {
+              thinkingBudget: 0
+            }
           }
         };
 
@@ -2033,9 +2044,15 @@
         }
 
         const data = await res.json();
-        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        const textParts = parts.filter(p => !p.thought && p.text).map(p => p.text).join('\n').trim();
+        let candidateText = textParts;
+        if (!candidateText && parts.length > 0) {
+          candidateText = (parts[parts.length - 1].text || '').replace(/^.*?thought.*$/gim, '').trim();
+        }
         if (!candidateText) throw new Error('返答が空でした');
-        return candidateText.trim();
+        candidateText = candidateText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+        return candidateText;
       } else if (aiConfig.provider === 'openai') {
         if (!aiConfig.apiKey) throw new Error('APIキーが未設定です');
         const model = aiConfig.openaiModel || 'gpt-4o-mini';
@@ -2096,8 +2113,10 @@ ${character.prompt}
 - モード: ${context === 'call' ? '着信通話（作業時間経過のお声がけ）' : 'チャット'}
 
 【出力ルール】:
-- ガラケーの液晶画面に表示するため、1〜2文程度（最大70文字以内）で返答してください。
-- 設定された一人称、語尾、口調、ユーザーへの呼び方を絶対に崩さないでください。`;
+- 思考プロセス、感情・性格分類ラベル、演技指示メモ（「〜らしく」「〜を意識して」「〜モード」等）は一切出力しないでください。
+- 1文字目からキャラクター本人の生のセリフ（発言）のみを出力してください。
+- ガラケーの液晶画面に表示するため、1〜3文程度で自然に返答してください。
+- 設定された一人称、語尾、口調、ユーザーへの呼び方を厳守してください。`;
 
           const promptMsg = context === 'call' ?
             `電話に出ました。継続作業時間は${mins}分です。あなたらしく第一声の挨拶・お声がけをしてください。` :
@@ -2160,7 +2179,7 @@ ${character.prompt}
             <option value="gemini-flash-latest">gemini-flash-latest (安定最新)</option>
             <option value="gemini-3.5-flash">gemini-3.5-flash (高知能)</option>
           `;
-          modelSel.value = aiConfig.geminiModel || 'gemini-1.5-flash';
+          modelSel.value = aiConfig.geminiModel || 'gemini-3.6-flash';
         }
       } else if (provider === 'openai') {
         if (cfAccRow) cfAccRow.style.display = 'none';
