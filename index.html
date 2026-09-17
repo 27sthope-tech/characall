@@ -1141,11 +1141,11 @@
       wallpaperSrc: 'assets/default_wallpaper.png'
     };
     let aiConfig = {
-      provider: 'local',
+      provider: 'gemini',
       apiKey: '',
       cfAccountId: '21a9be747e9e33d5438ce92cc3450e12',
       cfModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-      geminiModel: 'gemini-1.5-flash',
+      geminiModel: 'gemini-3.6-flash',
       openaiModel: 'gpt-4o-mini'
     };
     let currentThemeId = 'sakura-pink';
@@ -1172,6 +1172,26 @@
         document.body.classList.add('browser-preview-mode');
         const bSec = document.getElementById('browser-bg-section');
         if (bSec) bSec.style.display = 'block';
+      }
+
+      // Load local secure config if present (e.g. characall_config.json)
+      if (isElectron) {
+        try {
+          const fsMod = require('fs');
+          const pathMod = require('path');
+          const cfgPath = pathMod.join(__dirname, 'characall_config.json');
+          if (fsMod.existsSync(cfgPath)) {
+            const fileCfg = JSON.parse(fsMod.readFileSync(cfgPath, 'utf8'));
+            if (fileCfg.apiKey) {
+              aiConfig.provider = fileCfg.provider || 'gemini';
+              aiConfig.apiKey = fileCfg.apiKey;
+              if (fileCfg.geminiModel) aiConfig.geminiModel = fileCfg.geminiModel;
+              if (fileCfg.cfAccountId) aiConfig.cfAccountId = fileCfg.cfAccountId;
+            }
+          }
+        } catch(e) {
+          console.warn('Local config load:', e);
+        }
       }
 
       // Load saved state from localStorage
@@ -1789,7 +1809,7 @@
         return reply;
       } else if (aiConfig.provider === 'gemini') {
         if (!aiConfig.apiKey) throw new Error('APIキーが未設定です');
-        const model = aiConfig.geminiModel || 'gemini-1.5-flash';
+        const model = aiConfig.geminiModel || 'gemini-3.6-flash';
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(aiConfig.apiKey.trim())}`;
 
         const contents = [];
@@ -1952,8 +1972,9 @@ ${character.prompt}
         if (helpText) helpText.textContent = '※Google AI Studioで無料取得できるAPIキーを入力してください。';
         if (modelSel) {
           modelSel.innerHTML = `
-            <option value="gemini-1.5-flash">gemini-1.5-flash (高速・無料枠)</option>
-            <option value="gemini-2.0-flash">gemini-2.0-flash (最新・高知能)</option>
+            <option value="gemini-3.6-flash">gemini-3.6-flash (最新・超高速AI・推奨)</option>
+            <option value="gemini-flash-latest">gemini-flash-latest (安定最新)</option>
+            <option value="gemini-3.5-flash">gemini-3.5-flash (高知能)</option>
           `;
           modelSel.value = aiConfig.geminiModel || 'gemini-1.5-flash';
         }
@@ -2255,7 +2276,9 @@ ${character.prompt}
         if (!saved) return;
         const parsed = JSON.parse(saved);
         if (parsed.character) character = Object.assign(character, parsed.character);
-        if (parsed.aiConfig) aiConfig = Object.assign(aiConfig, parsed.aiConfig);
+        if (parsed.aiConfig) {
+          aiConfig = Object.assign(aiConfig, parsed.aiConfig);
+        }
         if (parsed.currentThemeId) setTheme(parsed.currentThemeId);
         if (parsed.currentAppBgId) setAppBgPreset(parsed.currentAppBgId);
         if (parsed.callIntervalMinutes) {
