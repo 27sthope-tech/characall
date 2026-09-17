@@ -51,6 +51,37 @@ function createWindow() {
       event.reply('window-ontop-changed', !isTop);
     }
   });
+
+  // Dynamic window resizing with aspect ratio locked (520:1480)
+  ipcMain.on('window-set-height', (event, targetHeight) => {
+    if (!mainWindow) return;
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workAreaSize;
+
+    const minH = 430;
+    const maxH = Math.min(1150, Math.floor(height * 0.98));
+    const finalH = Math.max(minH, Math.min(maxH, Math.round(targetHeight)));
+    const phoneWidth = Math.round(finalH * (520 / 1480));
+    const winWidth = phoneWidth + 40;
+
+    const bounds = mainWindow.getBounds();
+    const deltaW = winWidth - bounds.width;
+    let newX = bounds.x - Math.round(deltaW / 2);
+    let newY = bounds.y;
+
+    if (newX + winWidth > width) newX = Math.max(0, width - winWidth - 10);
+    if (newX < 0) newX = 10;
+    if (newY + finalH > height) newY = Math.max(0, height - finalH - 10);
+    if (newY < 0) newY = 10;
+
+    mainWindow.setBounds({
+      x: newX,
+      y: newY,
+      width: winWidth,
+      height: finalH
+    });
+    event.reply('window-size-changed', { width: winWidth, height: finalH });
+  });
 }
 
 // App lifecycle

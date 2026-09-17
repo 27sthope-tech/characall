@@ -14,6 +14,10 @@
       --theme-softkey: #fdf2f8;
       --app-bg: radial-gradient(circle at 50% 30%, #fff0f5 0%, #fce7f3 40%, #e2e8f0 100%);
       --app-bg-image: none;
+      --phone-scale-ratio: 0.85;
+    }
+    html {
+      font-size: calc(16px * var(--phone-scale-ratio, 0.85));
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -53,14 +57,26 @@
        ======================================================== */
     .phone-stage-wrapper {
       position: relative;
-      height: 98vh;
-      max-height: 870px;
+      height: 100%;
       aspect-ratio: 520 / 1480;
-      width: calc(min(98vh, 870px) * (520 / 1480));
       margin: 0 auto;
       filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.45));
       cursor: grab;
       -webkit-app-region: drag;
+    }
+    .quick-size-popup {
+      position: absolute;
+      top: 28px;
+      left: 14px;
+      width: 156px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(244, 114, 182, 0.7);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      padding: 6px;
+      z-index: 100;
+      -webkit-app-region: no-drag;
     }
     .phone-stage-wrapper:active {
       cursor: grabbing;
@@ -786,8 +802,28 @@
     <!-- Subtle Floating Gadget Controls for Cutout Phone -->
     <div class="phone-gadget-controls">
       <button class="gadget-btn ontop" id="gadget-ontop-btn" onclick="toggleAlwaysOnTop()" title="最前面固定 切り替え">📌</button>
+      <button class="gadget-btn size" id="gadget-size-btn" onclick="toggleQuickSizePopup(event)" title="サイズ変更 (拡大・縮小)">🔍</button>
       <button class="gadget-btn min" onclick="minimizeApp()" title="最小化">🗕</button>
       <button class="gadget-btn close" onclick="closeApp()" title="アプリを終了">✕</button>
+    </div>
+
+    <!-- Quick Floating Size Popup -->
+    <div class="quick-size-popup" id="quick-size-popup" style="display:none;">
+      <div style="font-size:0.52rem; font-weight:900; color:#db2777; display:flex; justify-content:space-between; align-items:center;">
+        <span>📐 表示サイズ</span>
+        <span id="quick-size-badge" style="font-size:0.48rem; color:#be185d; font-weight:bold;">85%</span>
+      </div>
+      <div style="display:flex; gap:2px; margin-top:2px;">
+        <button class="pill-btn-tag" onclick="setPhoneScalePreset(60)">60%</button>
+        <button class="pill-btn-tag" onclick="setPhoneScalePreset(75)">75%</button>
+        <button class="pill-btn-tag" onclick="setPhoneScalePreset(85)">85%</button>
+        <button class="pill-btn-tag" onclick="setPhoneScalePreset(100)">100%</button>
+      </div>
+      <div style="display:flex; align-items:center; gap:3px; margin-top:3px;">
+        <button class="pill-btn-tag" style="padding:1px 5px; font-size:0.54rem;" onclick="stepPhoneScale(-5)">−</button>
+        <input type="range" min="50" max="120" step="1" id="quick-scale-slider" oninput="handleScaleSlider(this.value)" style="flex:1; height:3px; accent-color:#db2777; cursor:pointer;">
+        <button class="pill-btn-tag" style="padding:1px 5px; font-size:0.54rem;" onclick="stepPhoneScale(5)">＋</button>
+      </div>
     </div>
 
     <!-- Crystal Jelly Y2K Feature Phone Cutout -->
@@ -848,9 +884,10 @@
           <!-- Submenu Category Tabs -->
           <div class="menu-tabs-bar">
             <button class="menu-tab-btn active" id="mtab-btn-char" onclick="switchMenuTab('char')">📝キャラ</button>
-            <button class="menu-tab-btn" id="mtab-btn-ai" onclick="switchMenuTab('ai')">🤖AI設定</button>
-            <button class="menu-tab-btn" id="mtab-btn-bg" onclick="switchMenuTab('bg')">🎨背景</button>
+            <button class="menu-tab-btn" id="mtab-btn-ai" onclick="switchMenuTab('ai')">🤖AI</button>
             <button class="menu-tab-btn" id="mtab-btn-color" onclick="switchMenuTab('color')">📱色</button>
+            <button class="menu-tab-btn" id="mtab-btn-size" onclick="switchMenuTab('size')">📐サイズ</button>
+            <button class="menu-tab-btn" id="mtab-btn-bg" onclick="switchMenuTab('bg')">🎨背景</button>
             <button class="menu-tab-btn" id="mtab-btn-call" onclick="switchMenuTab('call')">⏱️着信</button>
           </div>
 
@@ -946,6 +983,47 @@
                   🔵 スマート解析 (オフライン稼働中)
                 </span>
                 <button class="pill-btn-tag" onclick="testAiConnection()">⚡ 発言テスト</button>
+              </div>
+            </div>
+
+            <!-- TAB: サイズ変更設定 -->
+            <div id="mtab-panel-size" style="display:none; flex-direction:column; gap:4px;">
+              <div class="field-label" style="font-weight:900; color:#db2777;">📐 ガラケー表示サイズの変更</div>
+              <div style="font-size:0.48rem; color:#64748b; line-height:1.3; background:#f8fafc; padding:3px; border-radius:3px; border:1px solid #e2e8f0;">
+                モニターの広さや作業環境に合わせて、ガラケーの大きさを自由に変更できます。画面内の文字やパーツも比率を保ったまま美しく拡大・縮小されます。
+              </div>
+
+              <div style="background:#fdf2f8; border:1px dashed #f472b6; border-radius:4px; padding:4px 6px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.52rem; font-weight:800; color:#475569;">現在のサイズ:</span>
+                <span id="menu-size-display" style="font-size:0.58rem; font-weight:900; color:#db2777;">85% (高さ 740px)</span>
+              </div>
+
+              <div class="field-row" style="margin-top:2px;">
+                <label class="field-label">自由スライダー調整 (50% 〜 120%)</label>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <button class="pill-btn-tag" style="padding:1px 6px; font-size:0.56rem;" onclick="stepPhoneScale(-5)">−</button>
+                  <input type="range" min="50" max="120" step="1" id="menu-scale-slider" oninput="handleScaleSlider(this.value)" style="flex:1; height:4px; accent-color:#db2777; cursor:pointer;">
+                  <button class="pill-btn-tag" style="padding:1px 6px; font-size:0.56rem;" onclick="stepPhoneScale(5)">＋</button>
+                </div>
+              </div>
+
+              <div class="field-row" style="margin-top:2px;">
+                <label class="field-label">クイックプリセット</label>
+                <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:3px;">
+                  <button class="pill-btn-tag" style="padding:3px; text-align:center;" onclick="setPhoneScalePreset(55)">🔹 極小 55% (479px)</button>
+                  <button class="pill-btn-tag" style="padding:3px; text-align:center;" onclick="setPhoneScalePreset(70)">🔹 小 70% (609px)</button>
+                  <button class="pill-btn-tag" style="padding:3px; text-align:center;" onclick="setPhoneScalePreset(85)">★ 標準 85% (740px)</button>
+                  <button class="pill-btn-tag" style="padding:3px; text-align:center;" onclick="setPhoneScalePreset(100)">🔹 フル 100% (870px)</button>
+                  <button class="pill-btn-tag" style="padding:3px; text-align:center;" onclick="setPhoneScalePreset(115)">🔹 特大 115% (1000px)</button>
+                  <button class="pill-btn-tag" style="padding:3px; text-align:center; background:#f1f5f9; color:#475569; border-color:#cbd5e1;" onclick="setPhoneScalePreset(85)">🔄 リセット</button>
+                </div>
+              </div>
+
+              <div style="font-size:0.46rem; color:#64748b; line-height:1.4; background:#f8fafc; padding:4px; border-radius:3px; border:1px solid #e2e8f0; margin-top:2px;">
+                <strong>💡 ショートカット操作:</strong><br>
+                ・<code>Ctrl + マウスホイール</code> : アプリ上で拡大・縮小<br>
+                ・<code>Ctrl + [+] / [-]</code> : 拡大 / 縮小<br>
+                ・<code>Ctrl + [0]</code> : 標準サイズ(85%)に戻す
               </div>
             </div>
 
@@ -1211,6 +1289,7 @@
       updateOnTopButton(isAlwaysOnTop);
       updateAiProviderUI();
       updatePersonaPreview();
+      applyPhoneScale(currentScale, false);
 
       // Live Clock
       updateClock();
@@ -1315,7 +1394,7 @@
     // Menu Sub-tab switching
     function switchMenuTab(tabId) {
       currentMenuTab = tabId;
-      const tabs = ['char', 'ai', 'bg', 'color', 'call'];
+      const tabs = ['char', 'ai', 'bg', 'color', 'size', 'call'];
       tabs.forEach(t => {
         const btn = document.getElementById('mtab-btn-' + t);
         const panel = document.getElementById('mtab-panel-' + t);
@@ -1328,6 +1407,111 @@
       if (activeBtn) activeBtn.classList.add('active');
       if (activePanel) activePanel.style.display = 'flex';
     }
+
+    
+    // ========================================================
+    // DYNAMIC DISPLAY SCALING ENGINE (50% - 120%)
+    // ========================================================
+    let currentScale = 85;
+    const BASE_HEIGHT = 870;
+
+    function applyPhoneScale(scalePercent, save = true) {
+      currentScale = Math.max(50, Math.min(120, parseInt(scalePercent, 10) || 85));
+      const ratio = currentScale / 100;
+      const targetHeight = Math.round(BASE_HEIGHT * ratio);
+
+      // Set CSS variable for font sizing
+      document.documentElement.style.setProperty('--phone-scale-ratio', (currentScale / 85).toFixed(3));
+
+      if (isElectron) {
+        try {
+          const { ipcRenderer } = require('electron');
+          ipcRenderer.send('window-set-height', targetHeight);
+        } catch(e) {}
+      } else {
+        const stage = document.getElementById('phone-stage');
+        if (stage) {
+          stage.style.height = `${targetHeight}px`;
+          stage.style.maxHeight = `${targetHeight}px`;
+        }
+      }
+
+      updateScaleDisplays();
+      if (save) saveState();
+    }
+
+    function handleScaleSlider(val) {
+      applyPhoneScale(val, true);
+    }
+
+    function setPhoneScalePreset(val) {
+      applyPhoneScale(val, true);
+    }
+
+    function stepPhoneScale(delta) {
+      applyPhoneScale(currentScale + delta, true);
+    }
+
+    function updateScaleDisplays() {
+      const targetHeight = Math.round(BASE_HEIGHT * (currentScale / 100));
+      const phoneWidth = Math.round(targetHeight * (520 / 1480));
+
+      const quickBadge = document.getElementById('quick-size-badge');
+      if (quickBadge) quickBadge.textContent = `${currentScale}%`;
+
+      const quickSlider = document.getElementById('quick-scale-slider');
+      if (quickSlider) quickSlider.value = currentScale;
+
+      const menuDisplay = document.getElementById('menu-size-display');
+      if (menuDisplay) menuDisplay.textContent = `${currentScale}% (高: ${targetHeight}px / 幅: ${phoneWidth}px)`;
+
+      const menuSlider = document.getElementById('menu-scale-slider');
+      if (menuSlider) menuSlider.value = currentScale;
+    }
+
+    function toggleQuickSizePopup(e) {
+      if (e) e.stopPropagation();
+      const pop = document.getElementById('quick-size-popup');
+      if (!pop) return;
+      pop.style.display = (pop.style.display === 'none' || !pop.style.display) ? 'block' : 'none';
+    }
+
+    document.addEventListener('click', (e) => {
+      const pop = document.getElementById('quick-size-popup');
+      const btn = document.getElementById('gadget-size-btn');
+      if (pop && pop.style.display === 'block') {
+        if (!pop.contains(e.target) && e.target !== btn) {
+          pop.style.display = 'none';
+        }
+      }
+    });
+
+    // Shortcuts: Ctrl + Wheel, Ctrl + (+/-), Ctrl + 0
+    window.addEventListener('wheel', (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          stepPhoneScale(5);
+        } else if (e.deltaY > 0) {
+          stepPhoneScale(-5);
+        }
+      }
+    }, { passive: false });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey) {
+        if (e.key === '=' || e.key === '+') {
+          e.preventDefault();
+          stepPhoneScale(5);
+        } else if (e.key === '-' || e.key === '_') {
+          e.preventDefault();
+          stepPhoneScale(-5);
+        } else if (e.key === '0') {
+          e.preventDefault();
+          setPhoneScalePreset(85);
+        }
+      }
+    });
 
     // ========================================================
     // LIVE CLOCK & SCREEN TIME
@@ -2262,7 +2446,8 @@ ${character.prompt}
           currentThemeId,
           currentAppBgId,
           callIntervalMinutes,
-          isAlwaysOnTop
+          isAlwaysOnTop,
+          currentScale
         };
         localStorage.setItem('characall_foma_state', JSON.stringify(state));
       } catch(e) {
