@@ -1237,9 +1237,7 @@
     let currentScreenView = 'standby';
     let currentMenuTab = 'char';
 
-    let chatHistory = [
-      { sender: 'char', text: '今日も作業がんばってるわね！無理は禁物なんだからね！' }
-    ];
+    let chatHistory = [];
 
     // ========================================================
     // INITIALIZATION
@@ -1695,6 +1693,14 @@
       if (!stream) return;
       stream.innerHTML = '';
 
+      if (chatHistory.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'text-align:center; color:#94a3b8; font-size:0.5rem; padding:24px 8px; line-height:1.6;';
+        emptyDiv.innerHTML = '💬 メッセージ履歴はありません<br>下の入力欄または電話で会話を始められます';
+        stream.appendChild(emptyDiv);
+        return;
+      }
+
       chatHistory.forEach(msg => {
         const row = document.createElement('div');
         row.className = `chat-bubble-row ${msg.sender}`;
@@ -1801,7 +1807,8 @@
       if (!firstPerson) firstPerson = name || 'わたし';
 
       let tone = 'friendly';
-      if (/ツンデレ|素直になれ|強がり/.test(p)) tone = 'tsundere';
+      if (/俺|オレ|男|男子|黒尾|くん|君|野郎/.test(p) && !/ツンデレ/.test(p)) tone = 'senpai';
+            else if (/ツンデレ|素直になれ|強がり/.test(p)) tone = 'tsundere';
       else if (/お嬢様|貴族|高飛車|ですわ/.test(p)) tone = 'ojousama';
       else if (/執事|従者|メイド|慇懃/.test(p)) tone = 'butler';
       else if (/ギャル|パリピ|テンション/.test(p)) tone = 'gyaru';
@@ -2119,7 +2126,7 @@ ${character.prompt}
 - 設定された一人称、語尾、口調、ユーザーへの呼び方を厳守してください。`;
 
           const promptMsg = context === 'call' ?
-            `電話に出ました。継続作業時間は${mins}分です。あなたらしく第一声の挨拶・お声がけをしてください。` :
+            `（電話がつながりました。通話相手の現在の継続作業時間は${mins}分です。キャラクター設定の人格・口調・対人距離感を厳守し、電話に出た第一声の自然なセリフを1〜2文で言ってください。思考や説明は一切不要です）` :
             userText;
 
           const reply = await callLlmApi(systemInstruction, promptMsg, chatHistory);
@@ -2319,6 +2326,8 @@ ${character.prompt}
     function updateCharacterPrompt() {
       character.prompt = document.getElementById('cfg-char-prompt').value;
       updatePersonaPreview();
+      chatHistory = [];
+      renderChatStream();
       saveState();
     }
 
