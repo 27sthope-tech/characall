@@ -1,0 +1,12 @@
+{
+  "name": "characall-honeybee",
+  "version": "1.0.0",
+  "description": "HONEY BEE Y2K Desktop Partner App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

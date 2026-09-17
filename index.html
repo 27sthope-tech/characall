@@ -1,0 +1,1722 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CharaCall [Desktop Cutout Mascot]</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --theme-accent: #ec4899;
+      --theme-chip: #f472b6;
+      --theme-softkey: #fdf2f8;
+      --app-bg: radial-gradient(circle at 50% 30%, #fff0f5 0%, #fce7f3 40%, #e2e8f0 100%);
+      --app-bg-image: none;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* 100% Transparent Root: ONLY the phone shape is visible! */
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      background: transparent !important;
+      background-color: transparent !important;
+      background-image: none !important;
+      margin: 0;
+      padding: 0;
+      overflow: hidden !important;
+      user-select: none;
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: drag; /* Allows grabbing and moving the phone anywhere */
+    }
+
+    /* Browser Preview Mode fallback (only when opened in a regular web browser instead of Electron) */
+    body.browser-preview-mode {
+      background: var(--app-bg) !important;
+      background-image: var(--app-bg-image) !important;
+      background-size: cover !important;
+      background-position: center !important;
+      background-attachment: fixed !important;
+      -webkit-app-region: no-drag;
+    }
+
+    /* ========================================================
+       STAGE: EXACT [Image #1] FLIP PHONE CUTOUT
+       Dimensions: 369 x 1368 Aspect Ratio
+       ======================================================== */
+    .phone-stage-wrapper {
+      position: relative;
+      height: 98vh;
+      max-height: 870px;
+      aspect-ratio: 520 / 1480;
+      width: calc(min(98vh, 870px) * (520 / 1480));
+      margin: 0 auto;
+      filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.45));
+      cursor: grab;
+      -webkit-app-region: drag;
+    }
+    .phone-stage-wrapper:active {
+      cursor: grabbing;
+    }
+
+    /* Subtle Floating Controls on the Phone (Pin, Minimize, Close) */
+    .phone-gadget-controls {
+      position: absolute;
+      top: 6px;
+      left: 14px;
+      display: flex;
+      gap: 3px;
+      z-index: 60;
+      opacity: 0.40;
+      transition: opacity 0.2s ease;
+      -webkit-app-region: no-drag;
+    }
+    .phone-stage-wrapper:hover .phone-gadget-controls,
+    .phone-gadget-controls:hover {
+      opacity: 1;
+    }
+    .gadget-btn {
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+      font-size: 0.62rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+      color: #334155;
+    }
+    .gadget-btn:hover { transform: scale(1.15); }
+    .gadget-btn.close:hover { background: #ff5f56; color: #fff; border-color: #e0443e; }
+    .gadget-btn.min:hover { background: #ffbd2e; color: #fff; border-color: #dea123; }
+    .gadget-btn.ontop.active { background: #f472b6; color: #fff; border-color: #db2777; }
+
+    /* Vibration during incoming call */
+    .phone-stage-wrapper.vibrating {
+      animation: phoneVibe 0.22s infinite alternate ease-in-out;
+    }
+    @keyframes phoneVibe {
+      0% { transform: translate(-3px, 1.5px) rotate(-0.4deg); }
+      50% { transform: translate(3px, -2px) rotate(0.4deg); }
+      100% { transform: translate(-2px, -1px) rotate(-0.2deg); }
+    }
+
+    /* Base Phone Graphic ([Image #1] Cutout) */
+    .phone-base-img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    /* LED Lamp Flashing at Top during Incoming Call */
+    .earpiece-led {
+      position: absolute;
+      left: 17.7%;
+      top: 11.5%;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      z-index: 30;
+      display: none;
+      pointer-events: none;
+    }
+    .earpiece-led.blinking {
+      display: block;
+      animation: rainbowLed 0.3s infinite alternate;
+    }
+    @keyframes rainbowLed {
+      0% { background: #ec4899; box-shadow: 0 0 16px #ec4899; }
+      25% { background: #3b82f6; box-shadow: 0 0 16px #3b82f6; }
+      50% { background: #10b981; box-shadow: 0 0 16px #10b981; }
+      75% { background: #f59e0b; box-shadow: 0 0 16px #f59e0b; }
+      100% { background: #a855f7; box-shadow: 0 0 16px #a855f7; }
+    }
+
+    /* ========================================================
+       INTERACTIVE LCD SCREEN (Exact Screen Coordinates)
+       Left: 55px / 369 = 14.9051%
+       Top: 144px / 1368 = 10.5263%
+       Width: 260px / 369 = 70.4607%
+       Height: 394px / 1368 = 28.7997%
+       ======================================================== */
+    .interactive-lcd {
+      position: absolute;
+      left: calc(82 / 520 * 100%);
+      top: calc(338 / 1480 * 100%);
+      width: calc(361 / 520 * 100%);
+      height: calc(425 / 1480 * 100%);
+      border-radius: 8px;
+      overflow: hidden;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      font-family: 'DotGothic16', 'M PLUS Rounded 1c', sans-serif;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+      background: #0b0f19;
+      -webkit-app-region: no-drag; /* Keeps clicks and typing normal */
+      cursor: default;
+    }
+
+    /* Screen Glass Reflection */
+    .interactive-lcd::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 35%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 65%);
+      pointer-events: none;
+      z-index: 25;
+    }
+
+    /* LCD Status Header */
+    .lcd-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1px 4px;
+      font-size: 0.56rem;
+      font-weight: 900;
+      background: rgba(240, 240, 245, 0.90);
+      backdrop-filter: blur(4px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+      z-index: 10;
+      color: #0f172a;
+      flex-shrink: 0;
+      height: 17px;
+    }
+    .lcd-carrier-title {
+      font-size: 0.54rem;
+      font-weight: 800;
+      color: #be185d;
+      letter-spacing: 0.04em;
+    }
+    .lcd-icons-group {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* Screen Views Container */
+    .lcd-views-wrap {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      z-index: 5;
+    }
+
+    /* VIEW 1: STANDBY ([Image #1] 2004 Anime Wallpaper & Clock) */
+    .view-standby {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+    .standby-bg-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+    }
+    .standby-bg-layer img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Standby Clock Box (Faithful to [Image #1]) */
+    .standby-clock-box {
+      position: relative;
+      z-index: 2;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(4px);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      padding: 4px 6px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      margin: 4px 6px 0 6px;
+    }
+    .standby-time {
+      font-size: 1.25rem;
+      font-weight: 900;
+      line-height: 1.05;
+      color: #0f172a;
+      letter-spacing: 0.04em;
+    }
+    .standby-date {
+      font-size: 0.56rem;
+      color: #475569;
+      font-weight: 800;
+      margin-top: 1px;
+    }
+    .standby-carrier-text {
+      font-size: 0.52rem;
+      font-weight: 800;
+      color: #be185d;
+    }
+
+    /* Screen Time Widget Row */
+    .standby-screentime-box {
+      position: relative;
+      z-index: 2;
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 5px;
+      border: 1px solid var(--theme-chip, #f472b6);
+      padding: 2px 6px;
+      font-size: 0.52rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: auto 6px 3px 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    /* Standby Softkey Dock (No Call Test button! Only Menu, Decision, Mail) */
+    .standby-softkeys {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: stretch;
+      margin: 0;
+      height: 24px;
+      background: #252836;
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 0;
+    }
+    .softkey-btn {
+      background: transparent;
+      border: none;
+      border-right: 1px solid rgba(255, 255, 255, 0.10);
+      padding: 0 4px;
+      font-size: 0.56rem;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      color: #f1f5f9;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      -webkit-app-region: no-drag;
+    }
+    .softkey-btn:last-child {
+      border-right: none;
+    }
+    .softkey-btn:hover, .softkey-btn:active {
+      background: var(--theme-accent, #ec4899);
+      color: #ffffff;
+    }
+
+    /* ========================================================
+       VIEW 2: MAIN MENU (Consolidated: Char/Prompt, BG, Color, Call)
+       ======================================================== */
+    .view-menu {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      background: #ffffff;
+      height: 100%;
+      min-height: 0;
+    }
+    .menu-header-bar {
+      font-size: 0.58rem;
+      font-weight: 900;
+      color: #be185d;
+      background: linear-gradient(180deg, #fdf2f8 0%, #fce7f3 100%);
+      padding: 3px 5px;
+      border-bottom: 1.5px solid #f472b6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .menu-tabs-bar {
+      display: flex;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      flex-shrink: 0;
+      padding: 1px;
+      gap: 1px;
+    }
+    .menu-tab-btn {
+      flex: 1;
+      font-size: 0.49rem;
+      font-weight: 800;
+      padding: 3px 1px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      text-align: center;
+      border-radius: 2px;
+      white-space: nowrap;
+      -webkit-app-region: no-drag;
+    }
+    .menu-tab-btn.active {
+      background: #db2777;
+      color: #ffffff;
+      font-weight: 900;
+    }
+    .menu-tab-content-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 4px 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      -webkit-app-region: no-drag;
+    }
+    .menu-tab-content-wrap::-webkit-scrollbar {
+      width: 4px;
+    }
+    .menu-tab-content-wrap::-webkit-scrollbar-thumb {
+      background: #f472b6;
+      border-radius: 2px;
+    }
+
+    /* Form Fields inside Menu */
+    .field-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .field-label {
+      font-size: 0.52rem;
+      font-weight: 800;
+      color: #475569;
+    }
+    .field-text {
+      font-family: inherit;
+      font-size: 0.58rem;
+      padding: 2px 4px;
+      border-radius: 3px;
+      border: 1px solid #f472b6;
+      outline: none;
+      -webkit-app-region: no-drag;
+    }
+    .field-textarea {
+      width: 100%;
+      height: 42px;
+      resize: none;
+      font-family: inherit;
+      font-size: 0.56rem;
+      line-height: 1.35;
+      padding: 2px 4px;
+      border-radius: 3px;
+      border: 1px solid #f472b6;
+      outline: none;
+      -webkit-app-region: no-drag;
+    }
+    .pill-btn-tag {
+      font-size: 0.50rem;
+      background: #fdf2f8;
+      border: 1px solid #f472b6;
+      color: #9d174d;
+      padding: 1px 4px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 700;
+      white-space: nowrap;
+      -webkit-app-region: no-drag;
+    }
+    .pill-btn-tag:hover { background: #db2777; color: #fff; }
+
+    /* Backgrounds & Colors in Menu */
+    .bg-presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+    }
+    .bg-preset-btn {
+      font-size: 0.50rem;
+      font-weight: 700;
+      padding: 3px 2px;
+      border-radius: 3px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #1e293b;
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      -webkit-app-region: no-drag;
+    }
+    .bg-preset-btn.active {
+      border-color: #db2777;
+      background: #fdf2f8;
+      color: #9d174d;
+      font-weight: 900;
+    }
+    .color-swatch-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 3px;
+      border: 1px solid #e2e8f0;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.52rem;
+      -webkit-app-region: no-drag;
+    }
+    .color-swatch-row.active {
+      border-color: #db2777;
+      background: #fdf2f8;
+      font-weight: 900;
+    }
+    .swatch-circle {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 1px solid #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+      flex-shrink: 0;
+    }
+
+    .menu-footer-bar {
+      padding: 0;
+      height: 24px;
+      background: #252836;
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
+      display: flex;
+      flex-shrink: 0;
+    }
+    .menu-footer-bar .softkey-btn {
+      color: #f1f5f9;
+      background: transparent;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.58rem;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .menu-footer-bar .softkey-btn:hover,
+    .menu-footer-bar .softkey-btn:active {
+      background: var(--theme-accent, #ec4899);
+      color: #ffffff;
+    }
+
+    /* ========================================================
+       VIEW 3: CHAT / MAIL
+       ======================================================== */
+    .view-chat {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      padding: 4px;
+      background: #ffffff;
+      height: 100%;
+      min-height: 0;
+    }
+    .chat-top-bar {
+      font-size: 0.56rem;
+      font-weight: 800;
+      color: #be185d;
+      border-bottom: 1.5px solid #fce7f3;
+      padding-bottom: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .chat-body-stream {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 2px 0;
+      padding-right: 2px;
+      -webkit-app-region: no-drag;
+    }
+    .chat-body-stream::-webkit-scrollbar { width: 3px; }
+    .chat-body-stream::-webkit-scrollbar-thumb { background: #f472b6; border-radius: 2px; }
+    .chat-bubble-row {
+      display: flex;
+      gap: 3px;
+      max-width: 96%;
+    }
+    .chat-bubble-row.char { align-self: flex-start; }
+    .chat-bubble-row.user { align-self: flex-end; flex-direction: row-reverse; }
+    .bubble-avatar {
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: #fce7f3;
+      border: 1px solid #f472b6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.62rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .bubble-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .bubble-content {
+      padding: 3px 5px;
+      border-radius: 5px;
+      font-size: 0.56rem;
+      line-height: 1.35;
+      word-break: break-all;
+    }
+    .chat-bubble-row.char .bubble-content {
+      background: #fdf2f8;
+      border: 1px solid #fbcfe8;
+      color: #0f172a;
+    }
+    .chat-bubble-row.user .bubble-content {
+      background: #db2777;
+      color: #ffffff;
+    }
+    .chat-quick-replies {
+      display: flex;
+      gap: 2px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+    }
+    .chat-input-box {
+      display: flex;
+      gap: 2px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      -webkit-app-region: no-drag;
+    }
+    .chat-input {
+      flex: 1;
+      font-family: inherit;
+      font-size: 0.56rem;
+      padding: 2px 4px;
+      border-radius: 3px;
+      border: 1px solid #f472b6;
+      outline: none;
+      -webkit-app-region: no-drag;
+    }
+    .chat-send-btn {
+      background: #db2777;
+      color: #fff;
+      border: none;
+      padding: 0 5px;
+      border-radius: 3px;
+      font-size: 0.54rem;
+      font-weight: 800;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+    }
+
+    /* ========================================================
+       VIEW 4: INCOMING CALL OVERLAY (Vibration & LED Flash)
+       ======================================================== */
+    .incoming-call-layer {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #fce7f3 100%);
+      z-index: 30;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 4px;
+      text-align: center;
+      -webkit-app-region: no-drag;
+    }
+    .call-top-badge {
+      background: #ec4899;
+      color: #fff;
+      font-size: 0.60rem;
+      font-weight: 900;
+      padding: 2px 6px;
+      border-radius: 999px;
+      animation: flashCall 0.4s infinite alternate;
+    }
+    @keyframes flashCall {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0.8; transform: scale(1.04); }
+    }
+    .caller-avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      overflow: hidden;
+      margin: 2px 0;
+    }
+    .caller-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .call-decision-row {
+      display: flex;
+      width: 100%;
+      gap: 3px;
+      -webkit-app-region: no-drag;
+    }
+    .decision-btn {
+      flex: 1;
+      padding: 4px 2px;
+      border-radius: 4px;
+      font-family: inherit;
+      border: none;
+      font-weight: 900;
+      font-size: 0.56rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      -webkit-app-region: no-drag;
+    }
+    .decision-btn.accept { background: #10b981; color: #fff; }
+    .decision-btn.decline { background: #ef4444; color: #fff; }
+
+    /* VIEW 5: POWER OFF CONFIRM MODAL */
+    .power-off-layer {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.94);
+      z-index: 40;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 8px;
+      text-align: center;
+      color: #fff;
+      -webkit-app-region: no-drag;
+    }
+
+    /* ========================================================
+       KEYPAD HITBOXES (Mapped over 369 x 1368 coordinates)
+       ======================================================== */
+    .keypad-target {
+      position: absolute;
+      cursor: pointer;
+      z-index: 25;
+      border-radius: 50%;
+      transition: background 0.12s ease;
+      -webkit-app-region: no-drag;
+    }
+    .keypad-target:active {
+      background: rgba(244, 114, 182, 0.45);
+    }
+    /* D-Pad Center (決定) */
+    .key-dpad-center {
+      left: 44.8%;
+      top: 61.2%;
+      width: 11.2%;
+      height: 3.9%;
+      border-radius: 50%;
+    }
+    /* Call Start Key */
+    .key-call-start {
+      left: 20.0%;
+      top: 58.2%;
+      width: 12.0%;
+      height: 2.2%;
+      border-radius: 6px;
+    }
+    /* Call End Key */
+    .key-call-end {
+      left: 68.0%;
+      top: 58.2%;
+      width: 12.0%;
+      height: 2.2%;
+      border-radius: 6px;
+    }
+    /* Mail Key */
+    .key-mail {
+      left: 20.0%;
+      top: 62.4%;
+      width: 12.0%;
+      height: 2.9%;
+      border-radius: 8px;
+    }
+    /* Book Key */
+    .key-book {
+      left: 68.0%;
+      top: 62.4%;
+      width: 12.0%;
+      height: 2.9%;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Slender Clamshell Phone Stage ([Image #1] Exact Cutout with No Charms) -->
+  <div class="phone-stage-wrapper" id="phone-stage">
+
+    <!-- Subtle Floating Gadget Controls for Cutout Phone -->
+    <div class="phone-gadget-controls">
+      <button class="gadget-btn ontop" id="gadget-ontop-btn" onclick="toggleAlwaysOnTop()" title="最前面固定 切り替え">📌</button>
+      <button class="gadget-btn min" onclick="minimizeApp()" title="最小化">🗕</button>
+      <button class="gadget-btn close" onclick="closeApp()" title="アプリを終了">✕</button>
+    </div>
+
+    <!-- Crystal Jelly Y2K Feature Phone Cutout -->
+    <img src="assets/phone_pink.png" alt="Crystal Jelly Feature Phone" class="phone-base-img" id="phone-img">
+
+    <!-- Flashing LED at Earpiece / Top Casing -->
+    <div class="earpiece-led" id="phone-led"></div>
+
+    <!-- Interactive LCD Screen -->
+    <div class="interactive-lcd" id="lcd-screen">
+
+      <!-- LCD Status Bar -->
+      <div class="lcd-status-bar">
+        <span>Till</span>
+        <span class="lcd-carrier-title">CharaCall</span>
+        <div class="lcd-icons-group">
+          <span>🔒</span>
+          <span>[III]</span>
+        </div>
+      </div>
+
+      <!-- Screen Views Container -->
+      <div class="lcd-views-wrap">
+
+        <!-- VIEW 1: STANDBY ([Image #1] 2004 Anime Wallpaper & Clock) -->
+        <div id="view-standby" class="view-standby" style="display:flex;">
+          <div class="standby-bg-layer">
+            <img src="assets/default_wallpaper.png" alt="2004 Anime Wallpaper" id="standby-wallpaper-img">
+          </div>
+
+          <!-- Exact [Image #1] Clock Overlay -->
+          <div class="standby-clock-box">
+            <div class="standby-time" id="clock-time">03:17 PM</div>
+            <div class="standby-date" id="clock-date">2004/09/12 (日)</div>
+          </div>
+
+          <!-- Screen Time Tracking Row -->
+          <div class="standby-screentime-box">
+            <span>⏱️ 作業: <b id="screentime-display" style="color:#db2777;">00:00:00</b></span>
+            <span style="color:#059669; font-weight:800;">着信: ランダム</span>
+          </div>
+
+          <!-- Softkeys (Authentic: Menu, 決定, メール. NO Call Test Button!) -->
+          <div class="standby-softkeys">
+            <button class="softkey-btn" onclick="switchScreenView('menu')">Menu</button>
+            <button class="softkey-btn" onclick="handleDpadCenter()">決定</button>
+            <button class="softkey-btn" onclick="switchScreenView('chat')">メール</button>
+          </div>
+        </div>
+
+        <!-- VIEW 2: MAIN MENU (Consolidates Character, Backgrounds, Colors, Call settings) -->
+        <div id="view-menu" class="view-menu">
+          <div class="menu-header-bar">
+            <span>📖 メインメニュー (MENU)</span>
+            <span style="cursor:pointer; font-size:0.52rem; color:#64748b;" onclick="switchScreenView('standby')">待受へ ↩</span>
+          </div>
+
+          <!-- Submenu Category Tabs -->
+          <div class="menu-tabs-bar">
+            <button class="menu-tab-btn active" id="mtab-btn-char" onclick="switchMenuTab('char')">📝キャラ</button>
+            <button class="menu-tab-btn" id="mtab-btn-bg" onclick="switchMenuTab('bg')">🎨背景</button>
+            <button class="menu-tab-btn" id="mtab-btn-color" onclick="switchMenuTab('color')">📱色</button>
+            <button class="menu-tab-btn" id="mtab-btn-call" onclick="switchMenuTab('call')">⏱️着信</button>
+          </div>
+
+          <!-- Tab Content Wrap -->
+          <div class="menu-tab-content-wrap">
+
+            <!-- TAB 1: キャラクター・プロンプト設定 -->
+            <div id="mtab-panel-char" style="display:flex; flex-direction:column; gap:4px;">
+              <div class="field-row">
+                <label class="field-label">キャラクター名</label>
+                <input type="text" class="field-text" id="cfg-char-name" value="ルカ" oninput="updateCharacterName()">
+              </div>
+
+              <div class="field-row">
+                <label class="field-label">アイコン画像アップロード</label>
+                <input type="file" accept="image/*" class="field-text" onchange="handleAvatarUpload(event)">
+              </div>
+
+              <div class="field-row">
+                <label class="field-label">自由設定プロンプト (口調・性格)</label>
+                <textarea class="field-textarea" id="cfg-char-prompt" oninput="updateCharacterPrompt()"></textarea>
+              </div>
+
+              <div class="field-row">
+                <label class="field-label">ひな形プロンプト選択</label>
+                <div style="display:flex; flex-wrap:wrap; gap:2px; margin-top:1px;">
+                  <button class="pill-btn-tag" onclick="applyPreset('tsundere')">ツンデレ</button>
+                  <button class="pill-btn-tag" onclick="applyPreset('kouhai')">癒やし後輩</button>
+                  <button class="pill-btn-tag" onclick="applyPreset('senpai')">知的先輩</button>
+                  <button class="pill-btn-tag" onclick="applyPreset('butler')">執事</button>
+                  <button class="pill-btn-tag" onclick="applyPreset('gyaru')">ギャル</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: 背景・壁紙設定 (Menuの中に背景設定) -->
+            <div id="mtab-panel-bg" style="display:none; flex-direction:column; gap:4px;">
+              <div class="field-label" style="font-weight:900; color:#db2777;">📱 液晶待受壁紙の変更</div>
+              <div style="display:flex; gap:2px;">
+                <button class="pill-btn-tag" onclick="setStandbyWallpaperPreset('default')">[Image #1] 2004アニメ</button>
+                <label class="pill-btn-tag" style="cursor:pointer;">
+                  📁 待受画像
+                  <input type="file" accept="image/*" style="display:none;" onchange="handleCustomWallpaperUpload(event)">
+                </label>
+              </div>
+
+              <div class="field-label" style="font-weight:900; color:#db2777; margin-top:3px;">🪟 デスクトップ切り抜き表示</div>
+              <div style="font-size:0.50rem; color:#475569; line-height:1.35; background:#f8fafc; padding:3px; border-radius:3px; border:1px solid #e2e8f0;">
+                本アプリは四角いブラウザ枠をなくし、ガラケーの形だけをくり抜いてデスクトップに直接浮遊しています。本体をつかんで自由にドラッグ移動できます。
+              </div>
+
+              <!-- Browser Fallback BG options -->
+              <div id="browser-bg-section" style="display:none; margin-top:3px;">
+                <div class="field-label" style="font-size:0.50rem; color:#64748b;">（ブラウザプレビュー用背景）</div>
+                <div class="bg-presets-grid" id="bg-presets-container"></div>
+              </div>
+            </div>
+
+            <!-- TAB 3: 本体カラー設定 (Menuの中に色の設定) -->
+            <div id="mtab-panel-color" style="display:none; flex-direction:column; gap:3px;">
+              <div class="field-label" style="font-weight:900; color:#db2777;">📱 ガラケー本体カラー (7色)</div>
+              <div id="color-swatches-container" style="display:flex; flex-direction:column; gap:2px;"></div>
+            </div>
+
+            <!-- TAB 4: 着信・スクリーンタイム設定 -->
+            <div id="mtab-panel-call" style="display:none; flex-direction:column; gap:4px;">
+              <div class="field-label" style="font-weight:900; color:#db2777;">⏱️ ランダム着信設定</div>
+              <div class="field-row">
+                <label class="field-label">着信頻度 (ランダムインターバル)</label>
+                <select class="field-text" id="cfg-call-freq" onchange="updateCallFrequency()">
+                  <option value="15">約15分毎</option>
+                  <option value="30" selected>約30分毎 (推奨)</option>
+                  <option value="45">約45分毎</option>
+                  <option value="60">約60分毎</option>
+                </select>
+              </div>
+
+              <div class="field-row" style="margin-top:2px;">
+                <label class="field-label">スクリーンタイム管理</label>
+                <div style="font-size:0.56rem; color:#475569; margin-bottom:2px;">
+                  現在の作業時間: <b id="menu-screentime-display" style="color:#db2777;">00:00:00</b>
+                </div>
+                <button class="pill-btn-tag" onclick="resetScreenTime()">作業時間をリセット</button>
+              </div>
+
+              <div style="font-size:0.50rem; color:#64748b; margin-top:3px; line-height:1.3;">
+                ※ 音声なし（完全無音・バイブレーションと上部LED点滅のみで着信をお知らせします）
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Menu Footer Softkey -->
+          <div class="menu-footer-bar">
+            <button class="softkey-btn" onclick="switchScreenView('standby')">待受に戻る ↩</button>
+          </div>
+        </div>
+
+        <!-- VIEW 3: CHAT / MAIL -->
+        <div id="view-chat" class="view-chat">
+          <div class="chat-top-bar">
+            <span>💌 メール・トーク</span>
+            <span style="cursor:pointer; color:#64748b; font-size:0.52rem;" onclick="switchScreenView('standby')">待受へ ↩</span>
+          </div>
+
+          <div class="chat-body-stream" id="chat-stream"></div>
+
+          <div class="chat-quick-replies">
+            <button class="pill-btn-tag" onclick="sendQuickReply('ちょっと疲れた…')">☕ 疲れた</button>
+            <button class="pill-btn-tag" onclick="sendQuickReply('集中してノッてる！')">🔥 ノッてる</button>
+            <button class="pill-btn-tag" onclick="sendQuickReply('休憩してお茶飲むね')">🍵 休憩</button>
+          </div>
+
+          <div class="chat-input-box">
+            <input type="text" class="chat-input" id="chat-input-field" placeholder="返信を入力..." onkeydown="if(event.key==='Enter') submitChatMessage()">
+            <button class="chat-send-btn" onclick="submitChatMessage()">送信</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- INCOMING CALL SCREEN (完全無音・バイブ・LED光) -->
+      <div class="incoming-call-layer" id="incoming-call-layer">
+        <div>
+          <div class="call-top-badge">⚡ 着信中 ⚡</div>
+          <div style="font-size:0.50rem; color:#64748b; margin-top:1px;">※ 完全無音 (バイブ＆LED点滅)</div>
+        </div>
+
+        <div class="caller-avatar-circle" id="caller-avatar-display">
+          <img src="assets/default_wallpaper.png" alt="Caller Avatar" id="caller-avatar-img">
+        </div>
+
+        <div>
+          <div style="font-size:0.80rem; font-weight:900; color:#0f172a;" id="caller-name-display">ルカ</div>
+          <div style="font-size:0.54rem; color:#be185d; font-weight:bold; margin-top:1px;" id="caller-screentime-note">作業中のお声がけ</div>
+        </div>
+
+        <div class="call-decision-row">
+          <button class="decision-btn accept" onclick="acceptIncomingCall()">📞 応答</button>
+          <button class="decision-btn decline" onclick="declineIncomingCall()">✕ 保留</button>
+        </div>
+      </div>
+
+      <!-- POWER OFF CONFIRM MODAL -->
+      <div class="power-off-layer" id="power-off-layer">
+        <div style="font-size:0.75rem; font-weight:900; margin-bottom:4px; color:#f472b6;">📴 電源操作</div>
+        <div style="font-size:0.55rem; color:#cbd5e1; margin-bottom:10px;">デスクトップアプリをどうしますか？</div>
+        <div style="display:flex; flex-direction:column; gap:4px; width:80%;">
+          <button class="softkey-btn" style="background:#ffbd2e; color:#000;" onclick="minimizeApp()">🗕 最小化</button>
+          <button class="softkey-btn" style="background:#ff5f56; color:#fff;" onclick="closeApp()">✕ アプリを終了</button>
+          <button class="softkey-btn" style="background:#e2e8f0; color:#000;" onclick="hidePowerOffModal()">待受に戻る</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Interactive Keypad Hitboxes -->
+    <div class="keypad-target key-dpad-center" onclick="handleDpadCenter()" title="決定キー (センター)"></div>
+    <div class="keypad-target key-call-start" onclick="handleCallKey()" title="通話開始キー"></div>
+    <div class="keypad-target key-call-end" onclick="handleEndKey()" title="切断 / 電源キー"></div>
+    <div class="keypad-target key-mail" onclick="switchScreenView('chat')" title="メールキー"></div>
+    <div class="keypad-target key-book" onclick="switchScreenView('menu')" title="電話帳 / メニューキー"></div>
+
+  </div>
+
+  <script>
+    // Electron environment check
+    const isElectron = !!(window.process && window.process.versions && window.process.versions.electron);
+
+    // ========================================================
+    // 7 PASTEL METALLIC COLOR THEMES
+    // ========================================================
+    const THEMES = [
+      { id: 'sakura-pink', name: 'さくらピンク', sub: 'クリスタル・メタリックピンク', file: 'phone_pink.png', chip: '#f472b6', accent: '#ec4899', softkey: '#fdf2f8' },
+      { id: 'soda-blue', name: 'ソーダブルー', sub: 'アイシー・アクアブルー', file: 'phone_blue.png', chip: '#38bdf8', accent: '#0284c7', softkey: '#f0f9ff' },
+      { id: 'melon-mint', name: 'メロンミント', sub: '爽快パールグリーン', file: 'phone_mint.png', chip: '#34d399', accent: '#059669', softkey: '#f0fdf4' },
+      { id: 'lavender', name: 'ラベンダーパープル', sub: 'エレガント・スミレ色', file: 'phone_purple.png', chip: '#c084fc', accent: '#9333ea', softkey: '#faf5ff' },
+      { id: 'champagne-gold', name: 'シャンパンゴールド', sub: '高級感あふれるゴールド', file: 'phone_gold.png', chip: '#fbbf24', accent: '#d97706', softkey: '#fffbeb' },
+      { id: 'coral-peach', name: 'コーラルピーチ', sub: '温かいアプリコットオレンジ', file: 'phone_peach.png', chip: '#fb923c', accent: '#ea580c', softkey: '#fff7ed' },
+      { id: 'titanium-black', name: 'チタニウムブラック', sub: 'シックなメタリックチャコール', file: 'phone_black.png', chip: '#64748b', accent: '#334155', softkey: '#f8fafc' }
+    ];
+
+    // ========================================================
+    // APP BACKGROUND PRESETS (for browser preview mode)
+    // ========================================================
+    const APP_BG_PRESETS = [
+      { id: 'dream-grid', name: '🪞 Y2K グリッド', css: 'radial-gradient(circle at 50% 30%, #fff0f5 0%, #fce7f3 40%, #e2e8f0 100%)' },
+      { id: 'aqua-sky', name: '☁️ 平成アクア空', css: 'linear-gradient(180deg, #bae6fd 0%, #e0f2fe 50%, #ffffff 100%)' },
+      { id: 'sakura-pink', name: '🌸 さくらパステル', css: 'linear-gradient(135deg, #fbcfe8 0%, #f472b6 50%, #fce7f3 100%)' },
+      { id: 'cyber-dark', name: '🌌 サイバー・ダーク', css: 'linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #31103f 100%)' },
+      { id: 'studio-white', name: '⚪ クリーン・白', css: '#f8fafc' }
+    ];
+
+    // ========================================================
+    // PRESET PROMPTS FOR AI CHARACTER FORMATION
+    // ========================================================
+    const PRESETS = {
+      tsundere: {
+        name: 'ルカ',
+        prompt: 'あなたはツンデレな幼馴染の女の子です。素直になれず少しぶっきらぼうですが、ユーザーの体調や作業のしすぎを人一倍心配しています。語尾は「〜よ！」「〜じゃない！」「べ、別に心配してるわけじゃないんだからね！」など。作業時間が長くなると「もう！休憩しなさいよ！」と叱ってくれます。'
+      },
+      kouhai: {
+        name: 'ミア',
+        prompt: 'あなたはいつも元気にユーザーを慕ってくれる癒やし系の後輩です。作業を頑張る先輩を心から応援し、疲れた時はお茶やお菓子を差し入れようとします。語尾は「〜ですよ！」「〜ですね♪」「先輩、えらすぎます！」など。'
+      },
+      senpai: {
+        name: 'シオン',
+        prompt: 'あなたは冷静沈着で知的な先輩です。落ち着いた大人の視点でユーザーの作業効率と健康を優しく管理します。長時間の作業には理性的かつ的確に休憩を促します。語尾は「〜だよ」「〜かい？」「無理は禁物だね」など。'
+      },
+      butler: {
+        name: 'セバス',
+        prompt: 'あなたは慇懃無礼で少し毒舌な忠実なる執事です。丁寧な敬語を使いつつ、休まない主人の不養生をチクリと窘めます。語尾は「〜でございます」「〜してはいかがですか、旦那様」など。'
+      },
+      gyaru: {
+        name: 'アリス',
+        prompt: 'あなたは明るくテンション最高なギャルです！ユーザーを「〜っち」と呼び、とにかくノリ良くモチベを爆上げしてくれます。語尾は「〜じゃん！」「〜だょ☆」「マジおつかれさま〜！」など。'
+      }
+    };
+
+    // App State
+    let character = {
+      name: 'ルカ',
+      prompt: PRESETS.tsundere.prompt,
+      avatarSrc: 'assets/default_wallpaper.png',
+      wallpaperSrc: 'assets/default_wallpaper.png'
+    };
+    let currentThemeId = 'sakura-pink';
+    let currentAppBgId = 'dream-grid';
+    let isAlwaysOnTop = true;
+
+    let screenSeconds = 0;
+    let isCallActive = false;
+    let callTimerInterval = null;
+    let callIntervalMinutes = 30;
+    let currentScreenView = 'standby';
+    let currentMenuTab = 'char';
+
+    let chatHistory = [
+      { sender: 'char', text: '今日も作業がんばってるわね！無理は禁物なんだからね！' }
+    ];
+
+    // ========================================================
+    // INITIALIZATION
+    // ========================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      // Browser preview mode detection
+      if (!isElectron) {
+        document.body.classList.add('browser-preview-mode');
+        const bSec = document.getElementById('browser-bg-section');
+        if (bSec) bSec.style.display = 'block';
+      }
+
+      // Load saved state from localStorage
+      loadSavedState();
+
+      // Render theme swatches and bg presets inside Menu
+      renderThemeSwatches();
+      renderBgPresets();
+
+      // Set input fields
+      const nameInput = document.getElementById('cfg-char-name');
+      const promptInput = document.getElementById('cfg-char-prompt');
+      if (nameInput) nameInput.value = character.name;
+      if (promptInput) promptInput.value = character.prompt;
+      updateAvatarPreviews();
+      updateStandbyWallpaper();
+      updateOnTopButton(isAlwaysOnTop);
+
+      // Live Clock
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      // Continuous Screen Time Tracker
+      setInterval(tickScreenTime, 1000);
+
+      // Random Call Interval
+      scheduleNextRandomCall();
+
+      // Render Chat
+      renderChatStream();
+
+      // Electron IPC listener
+      if (isElectron) {
+        try {
+          const { ipcRenderer } = require('electron');
+          ipcRenderer.on('window-ontop-changed', (event, state) => {
+            isAlwaysOnTop = state;
+            updateOnTopButton(state);
+          });
+        } catch (e) {
+          console.warn('IPC listener registration', e);
+        }
+      }
+    });
+
+    // ========================================================
+    // WINDOW CONTROLS (Electron Cutout Mode)
+    // ========================================================
+    function minimizeApp() {
+      hidePowerOffModal();
+      if (isElectron) {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('window-minimize');
+      } else {
+        alert('最小化しました（ブラウザプレビュー中）');
+      }
+    }
+
+    function closeApp() {
+      if (isElectron) {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('window-close');
+      } else {
+        if (confirm('アプリを終了しますか？')) window.close();
+      }
+    }
+
+    function toggleAlwaysOnTop() {
+      if (isElectron) {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('window-toggle-ontop');
+      } else {
+        isAlwaysOnTop = !isAlwaysOnTop;
+        updateOnTopButton(isAlwaysOnTop);
+      }
+    }
+
+    function updateOnTopButton(state) {
+      const btn = document.getElementById('gadget-ontop-btn');
+      if (btn) {
+        if (state) {
+          btn.classList.add('active');
+          btn.title = '最前面固定中 (クリックで解除)';
+        } else {
+          btn.classList.remove('active');
+          btn.title = '通常表示中 (クリックで最前面固定)';
+        }
+      }
+    }
+
+    function showPowerOffModal() {
+      document.getElementById('power-off-layer').style.display = 'flex';
+    }
+
+    function hidePowerOffModal() {
+      document.getElementById('power-off-layer').style.display = 'none';
+    }
+
+    // ========================================================
+    // SCREEN VIEW NAVIGATION (Standby, Menu, Chat)
+    // ========================================================
+    function switchScreenView(viewId) {
+      hidePowerOffModal();
+      currentScreenView = viewId;
+      document.getElementById('view-standby').style.display = 'none';
+      document.getElementById('view-menu').style.display = 'none';
+      document.getElementById('view-chat').style.display = 'none';
+
+      if (viewId === 'standby') {
+        document.getElementById('view-standby').style.display = 'flex';
+      } else if (viewId === 'menu') {
+        document.getElementById('view-menu').style.display = 'flex';
+      } else if (viewId === 'chat') {
+        document.getElementById('view-chat').style.display = 'flex';
+        renderChatStream();
+      }
+    }
+
+    // Menu Sub-tab switching
+    function switchMenuTab(tabId) {
+      currentMenuTab = tabId;
+      const tabs = ['char', 'bg', 'color', 'call'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('mtab-btn-' + t);
+        const panel = document.getElementById('mtab-panel-' + t);
+        if (btn) btn.classList.remove('active');
+        if (panel) panel.style.display = 'none';
+      });
+
+      const activeBtn = document.getElementById('mtab-btn-' + tabId);
+      const activePanel = document.getElementById('mtab-panel-' + tabId);
+      if (activeBtn) activeBtn.classList.add('active');
+      if (activePanel) activePanel.style.display = 'flex';
+    }
+
+    // ========================================================
+    // LIVE CLOCK & SCREEN TIME
+    // ========================================================
+    function updateClock() {
+      const now = new Date();
+      let hours = now.getHours();
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const hoursStr = String(hours).padStart(2, '0');
+
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const days = ['日', '月', '火', '水', '木', '金', '土'];
+      const dayStr = days[now.getDay()];
+
+      const timeEl = document.getElementById('clock-time');
+      const dateEl = document.getElementById('clock-date');
+      if (timeEl) timeEl.textContent = `${hoursStr}:${mins} ${ampm}`;
+      if (dateEl) dateEl.textContent = `${yyyy}/${mm}/${dd} (${dayStr})`;
+    }
+
+    function tickScreenTime() {
+      screenSeconds++;
+      const h = String(Math.floor(screenSeconds / 3600)).padStart(2, '0');
+      const m = String(Math.floor((screenSeconds % 3600) / 60)).padStart(2, '0');
+      const s = String(screenSeconds % 60).padStart(2, '0');
+      const str = `${h}:${m}:${s}`;
+
+      const stDisp = document.getElementById('screentime-display');
+      const menuStDisp = document.getElementById('menu-screentime-display');
+      if (stDisp) stDisp.textContent = str;
+      if (menuStDisp) menuStDisp.textContent = str;
+
+      // Automatic break reminder if user works continuously for 45+ minutes
+      if (screenSeconds > 0 && screenSeconds % (45 * 60) === 0 && !isCallActive) {
+        triggerIncomingCall('長時間の作業お疲れさま！少し目を休めて水分補給してね。');
+      }
+    }
+
+    function resetScreenTime() {
+      screenSeconds = 0;
+      tickScreenTime();
+    }
+
+    // ========================================================
+    // INCOMING CALL LOGIC (Silent, Vibe, LED Flash)
+    // ========================================================
+    function scheduleNextRandomCall() {
+      if (callTimerInterval) clearTimeout(callTimerInterval);
+      // Random window around callIntervalMinutes (±30%)
+      const minMs = (callIntervalMinutes * 0.7) * 60 * 1000;
+      const maxMs = (callIntervalMinutes * 1.3) * 60 * 1000;
+      const delay = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+
+      callTimerInterval = setTimeout(() => {
+        triggerIncomingCall();
+        scheduleNextRandomCall();
+      }, delay);
+    }
+
+    function updateCallFrequency() {
+      const sel = document.getElementById('cfg-call-freq');
+      if (sel) {
+        callIntervalMinutes = parseInt(sel.value, 10) || 30;
+      }
+      scheduleNextRandomCall();
+      saveState();
+    }
+
+    function triggerIncomingCall(customReason) {
+      if (isCallActive) return;
+      isCallActive = true;
+
+      // 1. Silent Vibration on Phone Body
+      const stage = document.getElementById('phone-stage');
+      if (stage) stage.classList.add('vibrating');
+
+      // 2. LED Flashing on Top Casing
+      const led = document.getElementById('phone-led');
+      if (led) led.classList.add('blinking');
+
+      // 3. Update Call Screen Info
+      const nameEl = document.getElementById('caller-name-display');
+      if (nameEl) nameEl.textContent = character.name;
+      const noteEl = document.getElementById('caller-screentime-note');
+      if (noteEl) {
+        const mins = Math.floor(screenSeconds / 60);
+        noteEl.textContent = customReason || `作業 ${mins}分 経過のお声がけ`;
+      }
+
+      // 4. Show Call Layer
+      document.getElementById('incoming-call-layer').style.display = 'flex';
+    }
+
+    function acceptIncomingCall() {
+      stopCallAlerts();
+      isCallActive = false;
+      document.getElementById('incoming-call-layer').style.display = 'none';
+
+      // Generate in-character incoming message
+      const mins = Math.floor(screenSeconds / 60);
+      let callGreeting = '';
+      if (mins > 40) {
+        callGreeting = `もう${mins}分も作業してるじゃない！いい加減少し目を休めなさいよね！`;
+      } else if (mins > 15) {
+        callGreeting = `作業順調？集中しすぎないで、たまには肩の力抜いてよね！`;
+      } else {
+        callGreeting = `もしもし！ちょうど一息ついたところ？声が聞きたくなっただけなんだからね！`;
+      }
+
+      // Contextualized by prompt keywords
+      if (character.prompt.includes('敬語') || character.prompt.includes('執事')) {
+        callGreeting = `旦那様、${mins}分ほどご執務に励まれておられます。そろそろ香り高い紅茶をお淹れいたしましょうか。`;
+      } else if (character.prompt.includes('ギャル')) {
+        callGreeting = `もしもし〜！${mins}分も作業しててマジえらすぎ！ちょっと休憩して水分補給しよ〜☆`;
+      } else if (character.prompt.includes('後輩')) {
+        callGreeting = `先輩！作業${mins}分突破です！すっごく頑張ってますね♪ 少しお茶でも飲みませんか？`;
+      } else if (character.prompt.includes('冷静') || character.prompt.includes('知的')) {
+        callGreeting = `作業を始めて${mins}分が経過したね。集中力の持続曲線を考えても、ここで短時間の休憩を挟むのが最も合理的だよ。`;
+      }
+
+      chatHistory.push({ sender: 'char', text: `📞 [通話開始] ${callGreeting}` });
+      switchScreenView('chat');
+    }
+
+    function declineIncomingCall() {
+      stopCallAlerts();
+      isCallActive = false;
+      document.getElementById('incoming-call-layer').style.display = 'none';
+    }
+
+    function stopCallAlerts() {
+      const stage = document.getElementById('phone-stage');
+      if (stage) stage.classList.remove('vibrating');
+      const led = document.getElementById('phone-led');
+      if (led) led.classList.remove('blinking');
+    }
+
+    // ========================================================
+    // KEYPAD CONTROLS (Authentic Feature Phone Navigation)
+    // ========================================================
+    function handleDpadCenter() {
+      if (isCallActive) {
+        acceptIncomingCall();
+      } else if (currentScreenView === 'standby') {
+        switchScreenView('menu');
+      } else if (currentScreenView === 'menu') {
+        switchScreenView('standby');
+      }
+    }
+
+    function handleCallKey() {
+      if (isCallActive) {
+        acceptIncomingCall();
+      } else {
+        switchScreenView('chat');
+      }
+    }
+
+    function handleEndKey() {
+      if (isCallActive) {
+        declineIncomingCall();
+      } else if (currentScreenView !== 'standby') {
+        switchScreenView('standby');
+      } else {
+        showPowerOffModal();
+      }
+    }
+
+    // ========================================================
+    // CHAT & IN-CHARACTER AI ENGINE
+    // ========================================================
+    function renderChatStream() {
+      const stream = document.getElementById('chat-stream');
+      if (!stream) return;
+      stream.innerHTML = '';
+
+      chatHistory.forEach(msg => {
+        const row = document.createElement('div');
+        row.className = `chat-bubble-row ${msg.sender}`;
+
+        if (msg.sender === 'char') {
+          const av = document.createElement('div');
+          av.className = 'bubble-avatar';
+          const img = document.createElement('img');
+          img.src = character.avatarSrc;
+          av.appendChild(img);
+          row.appendChild(av);
+        }
+
+        const content = document.createElement('div');
+        content.className = 'bubble-content';
+        content.textContent = msg.text;
+        row.appendChild(content);
+
+        stream.appendChild(row);
+      });
+
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    function submitChatMessage() {
+      const input = document.getElementById('chat-input-field');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      chatHistory.push({ sender: 'user', text });
+      renderChatStream();
+
+      setTimeout(() => {
+        const reply = generateAiResponse(text);
+        chatHistory.push({ sender: 'char', text: reply });
+        renderChatStream();
+      }, 500);
+    }
+
+    function sendQuickReply(text) {
+      chatHistory.push({ sender: 'user', text });
+      renderChatStream();
+
+      setTimeout(() => {
+        const reply = generateAiResponse(text);
+        chatHistory.push({ sender: 'char', text: reply });
+        renderChatStream();
+      }, 500);
+    }
+
+    function generateAiResponse(userText) {
+      const p = character.prompt;
+      const name = character.name;
+
+      // Tsundere
+      if (p.includes('ツンデレ') || p.includes('素直になれず')) {
+        if (userText.includes('疲れた')) {
+          return `ちょっと、無理しすぎじゃない！…ほら、お茶でも淹れてあげたから、少し休みなさいよね！`;
+        }
+        if (userText.includes('ノッてる') || userText.includes('集中')) {
+          return `ふーん、調子いいじゃない。でも飛ばしすぎて後でバテても知らないんだからね！`;
+        }
+        if (userText.includes('休憩')) {
+          return `やっと休む気になったのね。えらいえらい…って、調子に乗らないでよね！`;
+        }
+        return `な、何言ってるのよ！…でもまあ、あなたが頑張ってるのは見ててあげるから。`;
+      }
+
+      // Kouhai
+      if (p.includes('後輩') || p.includes('癒やし')) {
+        if (userText.includes('疲れた')) {
+          return `先輩、本当にお疲れさまです！肩揉みしましょうか？甘いもの食べて癒やされてくださいね♪`;
+        }
+        if (userText.includes('ノッてる')) {
+          return `さすが先輩！集中してる姿、すっごくかっこいいです！応援してます！`;
+        }
+        return `先輩の頑張り、私がいちばん近くで見てますからね♪`;
+      }
+
+      // Senpai
+      if (p.includes('先輩') || p.includes('冷静') || p.includes('知的')) {
+        if (userText.includes('疲れた')) {
+          return `よく頑張ったね。人間の集中力は45分が限度だ。少し遠くの景色を見てリフレッシュするといいよ。`;
+        }
+        if (userText.includes('ノッてる')) {
+          return `素晴らしいゾーンに入っているね。その調子で進めるといい。`;
+        }
+        return `君のペースを尊重するよ。無理のない進行を心がけてね。`;
+      }
+
+      // Butler
+      if (p.includes('執事') || p.includes('セバス')) {
+        if (userText.includes('疲れた')) {
+          return `旦那様、無理をなさって倒れられては困ります。温かいハーブティーをご用意いたしました。`;
+        }
+        return `旦那様の努力が実を結びますよう、影ながらお支えいたします。`;
+      }
+
+      // Gyaru
+      if (p.includes('ギャル') || p.includes('アリス')) {
+        if (userText.includes('疲れた')) {
+          return `マジおつ〜！今日めっちゃ頑張ってるし！タピオカでも飲んで一息入れよ〜☆`;
+        }
+        if (userText.includes('ノッてる')) {
+          return `ヤバ！神がかってんじゃん！その調子でブチかましちゃって〜！`;
+        }
+        return `ウチはずーっと味方だし！ガンガンいこーぜ！`;
+      }
+
+      // Default Freeform fallback
+      return `「${userText}」ね、了解！${name}はいつでも応援してるよ！`;
+    }
+
+    // ========================================================
+    // CHARACTER & PROMPT SETTINGS
+    // ========================================================
+    function updateCharacterName() {
+      const val = document.getElementById('cfg-char-name').value.trim();
+      if (val) {
+        character.name = val;
+        const disp = document.getElementById('caller-name-display');
+        if (disp) disp.textContent = val;
+        saveState();
+      }
+    }
+
+    function updateCharacterPrompt() {
+      character.prompt = document.getElementById('cfg-char-prompt').value;
+      saveState();
+    }
+
+    function applyPreset(key) {
+      const pr = PRESETS[key];
+      if (!pr) return;
+      character.name = pr.name;
+      character.prompt = pr.prompt;
+      document.getElementById('cfg-char-name').value = pr.name;
+      document.getElementById('cfg-char-prompt').value = pr.prompt;
+      const disp = document.getElementById('caller-name-display');
+      if (disp) disp.textContent = pr.name;
+      saveState();
+      alert(`「${pr.name}」のひな形プロンプトを適用しました！`);
+    }
+
+    function handleAvatarUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        character.avatarSrc = evt.target.result;
+        updateAvatarPreviews();
+        renderChatStream();
+        saveState();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function updateAvatarPreviews() {
+      const callerImg = document.getElementById('caller-avatar-img');
+      if (callerImg) callerImg.src = character.avatarSrc;
+    }
+
+    // ========================================================
+    // BACKGROUND & WALLPAPER SETTINGS
+    // ========================================================
+    function renderBgPresets() {
+      const c = document.getElementById('bg-presets-container');
+      if (!c) return;
+      c.innerHTML = '';
+      APP_BG_PRESETS.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = `bg-preset-btn ${item.id === currentAppBgId ? 'active' : ''}`;
+        btn.textContent = item.name;
+        btn.onclick = () => setAppBgPreset(item.id);
+        c.appendChild(btn);
+      });
+    }
+
+    function setAppBgPreset(id) {
+      currentAppBgId = id;
+      const p = APP_BG_PRESETS.find(x => x.id === id);
+      if (p) {
+        document.documentElement.style.setProperty('--app-bg', p.css);
+      }
+      renderBgPresets();
+      saveState();
+    }
+
+    function handleCustomWallpaperUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        character.wallpaperSrc = evt.target.result;
+        updateStandbyWallpaper();
+        saveState();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setStandbyWallpaperPreset(type) {
+      if (type === 'default') {
+        character.wallpaperSrc = 'assets/default_wallpaper.png';
+        updateStandbyWallpaper();
+        saveState();
+      }
+    }
+
+    function updateStandbyWallpaper() {
+      const img = document.getElementById('standby-wallpaper-img');
+      if (img) img.src = character.wallpaperSrc;
+    }
+
+    // ========================================================
+    // 7 PASTEL COLOR THEMES SETTINGS
+    // ========================================================
+    function renderThemeSwatches() {
+      const c = document.getElementById('color-swatches-container');
+      if (!c) return;
+      c.innerHTML = '';
+
+      THEMES.forEach(t => {
+        const row = document.createElement('div');
+        row.className = `color-swatch-row ${t.id === currentThemeId ? 'active' : ''}`;
+        row.onclick = () => setTheme(t.id);
+
+        const circle = document.createElement('div');
+        circle.className = 'swatch-circle';
+        circle.style.backgroundColor = t.chip;
+
+        const info = document.createElement('div');
+        info.innerHTML = `<b>${t.name}</b> <span style="color:#64748b; font-size:0.50rem;">(${t.sub})</span>`;
+
+        row.appendChild(circle);
+        row.appendChild(info);
+        c.appendChild(row);
+      });
+    }
+
+    function setTheme(themeId) {
+      let t = THEMES.find(x => x.id === themeId);
+      if (!t) {
+        if (themeId === 'rose-pink') t = THEMES.find(x => x.id === 'sakura-pink');
+        else if (themeId === 'peach') t = THEMES.find(x => x.id === 'coral-peach');
+        else if (themeId === 'lemon') t = THEMES.find(x => x.id === 'champagne-gold');
+        else t = THEMES[0];
+      }
+      currentThemeId = t.id;
+
+      const phoneImg = document.getElementById('phone-img');
+      if (phoneImg) {
+        phoneImg.src = 'assets/' + t.file;
+      }
+
+      document.documentElement.style.setProperty('--theme-accent', t.accent);
+      document.documentElement.style.setProperty('--theme-chip', t.chip);
+      document.documentElement.style.setProperty('--theme-softkey', t.softkey);
+
+      renderThemeSwatches();
+      saveState();
+    }
+
+    // ========================================================
+    // LOCALSTORAGE PERSISTENCE
+    // ========================================================
+    function saveState() {
+      try {
+        const state = {
+          character,
+          currentThemeId,
+          currentAppBgId,
+          callIntervalMinutes,
+          isAlwaysOnTop
+        };
+        localStorage.setItem('characall_foma_state', JSON.stringify(state));
+      } catch(e) {
+        console.warn('Storage save failed', e);
+      }
+    }
+
+    function loadSavedState() {
+      try {
+        const saved = localStorage.getItem('characall_foma_state');
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        if (parsed.character) character = Object.assign(character, parsed.character);
+        if (parsed.currentThemeId) setTheme(parsed.currentThemeId);
+        if (parsed.currentAppBgId) setAppBgPreset(parsed.currentAppBgId);
+        if (parsed.callIntervalMinutes) {
+          callIntervalMinutes = parsed.callIntervalMinutes;
+          const sel = document.getElementById('cfg-call-freq');
+          if (sel) sel.value = String(callIntervalMinutes);
+        }
+        if (typeof parsed.isAlwaysOnTop === 'boolean') {
+          isAlwaysOnTop = parsed.isAlwaysOnTop;
+        }
+      } catch(e) {
+        console.warn('Storage load failed', e);
+      }
+    }
+  </script>
+</body>
+</html>
+
