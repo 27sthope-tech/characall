@@ -848,6 +848,7 @@
           <!-- Submenu Category Tabs -->
           <div class="menu-tabs-bar">
             <button class="menu-tab-btn active" id="mtab-btn-char" onclick="switchMenuTab('char')">📝キャラ</button>
+            <button class="menu-tab-btn" id="mtab-btn-ai" onclick="switchMenuTab('ai')">🤖AI設定</button>
             <button class="menu-tab-btn" id="mtab-btn-bg" onclick="switchMenuTab('bg')">🎨背景</button>
             <button class="menu-tab-btn" id="mtab-btn-color" onclick="switchMenuTab('color')">📱色</button>
             <button class="menu-tab-btn" id="mtab-btn-call" onclick="switchMenuTab('call')">⏱️着信</button>
@@ -869,11 +870,25 @@
               </div>
 
               <div class="field-row">
-                <label class="field-label">自由設定プロンプト (口調・性格)</label>
-                <textarea class="field-textarea" id="cfg-char-prompt" oninput="updateCharacterPrompt()"></textarea>
+                <label class="field-label">自由設定プロンプト (口調・性格・語尾・呼び方)</label>
+                <textarea class="field-textarea" id="cfg-char-prompt" oninput="updateCharacterPrompt()" placeholder="（例）あなたは猫の妖精のルカです。語尾に「〜にゃ」をつけて話します。ユーザーのことは「ご主人様」と呼びます。のんびり屋で甘えん坊ですが、作業しすぎな時は心配してくれます。"></textarea>
               </div>
 
-              <div class="field-row">
+              <!-- Live Persona Analysis Preview -->
+              <div id="persona-preview-box" style="background:#fdf2f8; border:1px dashed #f472b6; border-radius:4px; padding:3px 5px; margin-top:1px;">
+                <div style="font-size:0.48rem; font-weight:800; color:#db2777; display:flex; justify-content:space-between;">
+                  <span>✨ 性格解析プレビュー (即時反映)</span>
+                  <span id="persona-preview-mode" style="color:#059669; font-weight:900;">AI反映中</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:3px; margin-top:2px; font-size:0.48rem;">
+                  <span style="background:#fff; border:1px solid #fbcfe8; padding:1px 3px; border-radius:3px; color:#475569;">語尾: <strong id="prev-ending" style="color:#be185d;">〜よ！</strong></span>
+                  <span style="background:#fff; border:1px solid #fbcfe8; padding:1px 3px; border-radius:3px; color:#475569;">呼称: <strong id="prev-honorific" style="color:#be185d;">あなた</strong></span>
+                  <span style="background:#fff; border:1px solid #fbcfe8; padding:1px 3px; border-radius:3px; color:#475569;">一人称: <strong id="prev-fp" style="color:#be185d;">ルカ</strong></span>
+                  <span style="background:#fff; border:1px solid #fbcfe8; padding:1px 3px; border-radius:3px; color:#475569;">タイプ: <strong id="prev-tone" style="color:#be185d;">ツンデレ</strong></span>
+                </div>
+              </div>
+
+              <div class="field-row" style="margin-top:2px;">
                 <label class="field-label">ひな形プロンプト選択</label>
                 <div style="display:flex; flex-wrap:wrap; gap:2px; margin-top:1px;">
                   <button class="pill-btn-tag" onclick="applyPreset('tsundere')">ツンデレ</button>
@@ -882,6 +897,50 @@
                   <button class="pill-btn-tag" onclick="applyPreset('butler')">執事</button>
                   <button class="pill-btn-tag" onclick="applyPreset('gyaru')">ギャル</button>
                 </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: AI対話エンジン設定 -->
+            <div id="mtab-panel-ai" style="display:none; flex-direction:column; gap:4px;">
+              <div class="field-label" style="font-weight:900; color:#db2777;">🤖 対話AIエンジン設定</div>
+              <div style="font-size:0.48rem; color:#64748b; line-height:1.3; background:#f8fafc; padding:3px; border-radius:3px; border:1px solid #e2e8f0;">
+                自由設定プロンプトに書いた性格・口調・語尾が完全に会話・着信に反映されます。Google Gemini等の無料APIキーを設定すれば、文脈を深く理解したリアルタイムAI対話が可能です（APIキー未設定でも高度ローカル自然言語解析エンジンが自動稼働します）。
+              </div>
+
+              <div class="field-row">
+                <label class="field-label">AIプロバイダー</label>
+                <select class="field-text" id="cfg-ai-provider" onchange="updateAiProvider()">
+                  <option value="local">🔵 スマート自然言語解析 (キー不要・完全オフライン)</option>
+                  <option value="gemini">🟢 Google Gemini (無料枠APIキーで本格AI)</option>
+                  <option value="openai">🟢 OpenAI (GPT-4o-mini / 高精度AI)</option>
+                </select>
+              </div>
+
+              <div class="field-row" id="cfg-ai-key-row" style="display:none;">
+                <label class="field-label" id="cfg-ai-key-label">API Key</label>
+                <div style="display:flex; gap:2px;">
+                  <input type="password" class="field-text" id="cfg-ai-apikey" placeholder="API Key を入力..." oninput="updateAiConfig()" style="flex:1;">
+                  <button class="pill-btn-tag" type="button" onclick="toggleApiKeyVisibility()" id="btn-toggle-key-vis">👁️</button>
+                </div>
+                <div id="cfg-ai-help-text" style="font-size:0.46rem; color:#94a3b8; margin-top:1px;">
+                  ※APIキーはPC内（localStorage）に安全に保存されます。
+                </div>
+              </div>
+
+              <div class="field-row" id="cfg-ai-model-row" style="display:none;">
+                <label class="field-label">使用モデル</label>
+                <select class="field-text" id="cfg-ai-model" onchange="updateAiConfig()">
+                  <option value="gemini-1.5-flash">gemini-1.5-flash (高速・無料)</option>
+                  <option value="gemini-2.0-flash">gemini-2.0-flash (最新・高知能)</option>
+                </select>
+              </div>
+
+              <!-- Status indicator & Test Button -->
+              <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:3px; padding:3px 4px; display:flex; align-items:center; justify-content:space-between; margin-top:2px;">
+                <span style="font-size:0.48rem; font-weight:800; color:#166534;" id="ai-status-indicator">
+                  🔵 スマート解析 (オフライン稼働中)
+                </span>
+                <button class="pill-btn-tag" onclick="testAiConnection()">⚡ 発言テスト</button>
               </div>
             </div>
 
@@ -1076,6 +1135,12 @@
       avatarSrc: 'assets/default_wallpaper.png',
       wallpaperSrc: 'assets/default_wallpaper.png'
     };
+    let aiConfig = {
+      provider: 'local',
+      apiKey: '',
+      geminiModel: 'gemini-1.5-flash',
+      openaiModel: 'gpt-4o-mini'
+    };
     let currentThemeId = 'sakura-pink';
     let currentAppBgId = 'dream-grid';
     let isAlwaysOnTop = true;
@@ -1117,6 +1182,8 @@
       updateAvatarPreviews();
       updateStandbyWallpaper();
       updateOnTopButton(isAlwaysOnTop);
+      updateAiProviderUI();
+      updatePersonaPreview();
 
       // Live Clock
       updateClock();
@@ -1221,7 +1288,7 @@
     // Menu Sub-tab switching
     function switchMenuTab(tabId) {
       currentMenuTab = tabId;
-      const tabs = ['char', 'bg', 'color', 'call'];
+      const tabs = ['char', 'ai', 'bg', 'color', 'call'];
       tabs.forEach(t => {
         const btn = document.getElementById('mtab-btn-' + t);
         const panel = document.getElementById('mtab-panel-' + t);
@@ -1332,35 +1399,29 @@
       document.getElementById('incoming-call-layer').style.display = 'flex';
     }
 
-    function acceptIncomingCall() {
+    async function acceptIncomingCall() {
       stopCallAlerts();
       isCallActive = false;
       document.getElementById('incoming-call-layer').style.display = 'none';
 
-      // Generate in-character incoming message
       const mins = Math.floor(screenSeconds / 60);
-      let callGreeting = '';
-      if (mins > 40) {
-        callGreeting = `もう${mins}分も作業してるじゃない！いい加減少し目を休めなさいよね！`;
-      } else if (mins > 15) {
-        callGreeting = `作業順調？集中しすぎないで、たまには肩の力抜いてよね！`;
-      } else {
-        callGreeting = `もしもし！ちょうど一息ついたところ？声が聞きたくなっただけなんだからね！`;
-      }
 
-      // Contextualized by prompt keywords
-      if (character.prompt.includes('敬語') || character.prompt.includes('執事')) {
-        callGreeting = `旦那様、${mins}分ほどご執務に励まれておられます。そろそろ香り高い紅茶をお淹れいたしましょうか。`;
-      } else if (character.prompt.includes('ギャル')) {
-        callGreeting = `もしもし〜！${mins}分も作業しててマジえらすぎ！ちょっと休憩して水分補給しよ〜☆`;
-      } else if (character.prompt.includes('後輩')) {
-        callGreeting = `先輩！作業${mins}分突破です！すっごく頑張ってますね♪ 少しお茶でも飲みませんか？`;
-      } else if (character.prompt.includes('冷静') || character.prompt.includes('知的')) {
-        callGreeting = `作業を始めて${mins}分が経過したね。集中力の持続曲線を考えても、ここで短時間の休憩を挟むのが最も合理的だよ。`;
-      }
-
-      chatHistory.push({ sender: 'char', text: `📞 [通話開始] ${callGreeting}` });
+      // Switch to chat view and display call connection
+      const callLoadingId = 'call-loading-' + Date.now();
+      chatHistory.push({ sender: 'char', text: '📞 [通話開始] 接続中...', id: callLoadingId });
       switchScreenView('chat');
+
+      try {
+        const greeting = await getAiCharacterReply('通話開始', 'call');
+        chatHistory = chatHistory.filter(m => m.id !== callLoadingId);
+        chatHistory.push({ sender: 'char', text: `📞 [通話開始] ${greeting}` });
+        renderChatStream();
+      } catch (e) {
+        chatHistory = chatHistory.filter(m => m.id !== callLoadingId);
+        const greeting = generateSmartPersonaResponse('通話開始', 'call', mins, character);
+        chatHistory.push({ sender: 'char', text: `📞 [通話開始] ${greeting}` });
+        renderChatStream();
+      }
     }
 
     function declineIncomingCall() {
@@ -1430,7 +1491,11 @@
 
         const content = document.createElement('div');
         content.className = 'bubble-content';
-        content.textContent = msg.text;
+        if (msg.isTyping) {
+          content.innerHTML = '<span style="color:#db2777; font-size:0.52rem; animation: pulse 1s infinite;">📨 受信中...</span>';
+        } else {
+          content.textContent = msg.text;
+        }
         row.appendChild(content);
 
         stream.appendChild(row);
@@ -1439,7 +1504,7 @@
       stream.scrollTop = stream.scrollHeight;
     }
 
-    function submitChatMessage() {
+    async function submitChatMessage() {
       const input = document.getElementById('chat-input-field');
       const text = input.value.trim();
       if (!text) return;
@@ -1448,102 +1513,515 @@
       chatHistory.push({ sender: 'user', text });
       renderChatStream();
 
-      setTimeout(() => {
-        const reply = generateAiResponse(text);
+      const typingId = 'typing-' + Date.now();
+      chatHistory.push({ sender: 'char', text: '📨 考え中...', isTyping: true, id: typingId });
+      renderChatStream();
+
+      try {
+        const reply = await getAiCharacterReply(text, 'chat');
+        chatHistory = chatHistory.filter(m => m.id !== typingId);
         chatHistory.push({ sender: 'char', text: reply });
         renderChatStream();
-      }, 500);
+      } catch (e) {
+        chatHistory = chatHistory.filter(m => m.id !== typingId);
+        const reply = generateSmartPersonaResponse(text, 'chat', Math.floor(screenSeconds / 60), character);
+        chatHistory.push({ sender: 'char', text: reply });
+        renderChatStream();
+      }
     }
 
-    function sendQuickReply(text) {
+    async function sendQuickReply(text) {
       chatHistory.push({ sender: 'user', text });
       renderChatStream();
 
-      setTimeout(() => {
-        const reply = generateAiResponse(text);
+      const typingId = 'typing-' + Date.now();
+      chatHistory.push({ sender: 'char', text: '📨 考え中...', isTyping: true, id: typingId });
+      renderChatStream();
+
+      try {
+        const reply = await getAiCharacterReply(text, 'chat');
+        chatHistory = chatHistory.filter(m => m.id !== typingId);
         chatHistory.push({ sender: 'char', text: reply });
         renderChatStream();
-      }, 500);
+      } catch (e) {
+        chatHistory = chatHistory.filter(m => m.id !== typingId);
+        const reply = generateSmartPersonaResponse(text, 'chat', Math.floor(screenSeconds / 60), character);
+        chatHistory.push({ sender: 'char', text: reply });
+        renderChatStream();
+      }
     }
 
-    function generateAiResponse(userText) {
+    // ========================================================
+    // NATURAL LANGUAGE PERSONA PARSER & SMART AI ENGINE
+    // ========================================================
+    function parsePersona(prompt, name) {
+      const p = prompt || '';
+      let ending = '';
+      const endingMatch = p.match(/語尾[はにがを:][s「『]*[〜~]?([ぁ-んァ-ヶーa-zA-Z☆★♪]+)[」』]*/) ||
+                          p.match(/[「『][〜~]([ぁ-んァ-ヶーa-zA-Z☆★♪]+)[」』]/) ||
+                          p.match(/[〜~]([ぁ-んァ-ヶー]{1,6})/);
+      if (endingMatch) {
+        ending = endingMatch[1].replace(/^[〜~]/, '');
+      }
+
+      let honorific = '';
+      const honorificMatch = p.match(/(?:ユーザー|相手|お前|あなた|主人|プレイヤー)(?:のこと)?[のはをにが]*[「『]?([^」』\s、。]+?)[」』]?と呼/) ||
+                             p.match(/呼び(?:方|名)[はに:][s「『]*([^」』\s、。]+)[」』]*/) ||
+                             p.match(/(ご主人様|マスター|お兄ちゃん|お姉ちゃん|プロデューサー(?:さん)?|先輩|後輩|部長|相棒|庶民|旦那様|お前|アンタ|あんた|貴方|あなた|きみ|君)/);
+      if (honorificMatch) {
+        honorific = honorificMatch[1];
+      }
+      if (!honorific) honorific = 'あなた';
+
+      let firstPerson = '';
+      const fpMatch = p.match(/一人称[はに:][s「『]*([^」』\s、。]+)[」』]*/) ||
+                      p.match(/(私|わたし|わたくし|ボク|僕|俺|オレ|ウチ|わらわ|拙者|あたし|小生|ワシ|自分)/);
+      if (fpMatch) {
+        firstPerson = fpMatch[1];
+      }
+      if (!firstPerson) firstPerson = name || 'わたし';
+
+      let tone = 'friendly';
+      if (/ツンデレ|素直になれ|強がり/.test(p)) tone = 'tsundere';
+      else if (/お嬢様|貴族|高飛車|ですわ/.test(p)) tone = 'ojousama';
+      else if (/執事|従者|メイド|慇懃/.test(p)) tone = 'butler';
+      else if (/ギャル|パリピ|テンション/.test(p)) tone = 'gyaru';
+      else if (/後輩|慕って|〜ッス/.test(p)) tone = 'kouhai';
+      else if (/先輩|冷静|知的|大人|クール/.test(p)) tone = 'senpai';
+      else if (/癒やし|猫|甘えん坊|おっとり|優しい|のんびり/.test(p)) tone = 'iyashi';
+      else if (/熱血|元気|活発/.test(p)) tone = 'cheerful';
+      else if (/関西弁|大阪弁|やで|せやな/.test(p)) tone = 'kansai';
+      else if (/ロボット|アンドロイド|AI|機械/.test(p)) tone = 'robot';
+
+      return { ending, honorific, firstPerson, tone };
+    }
+
+    function applyEnding(text, ending) {
+      if (!ending) return text;
+      const e = ending.replace(/^[〜~]/, '');
+
+      const segments = text.split(/([！!？?。\n]+)/);
+      let result = '';
+
+      for (let i = 0; i < segments.length; i += 2) {
+        let s = segments[i];
+        let punct = segments[i + 1] || '';
+        if (!s.trim()) {
+          result += s + punct;
+          continue;
+        }
+
+        if (/^(?:もしもし|ごきげんよう|やっほ[〜ー]?|おーい|ハロー|挨拶)/.test(s) && s.length <= 10) {
+          result += s + punct;
+          continue;
+        }
+        if (/(?:様|さん|くん|君|先輩|殿|っち|マスター|プロデューサー|庶民|相棒|アンタ)$/.test(s)) {
+          result += s + punct;
+          continue;
+        }
+
+        if (s.includes(e) || (e === 'ですわ' && s.includes('わ')) || (e === 'やで' && /(?:やん|やで|ねん|アカン)/.test(s))) {
+          result += s + punct;
+          continue;
+        }
+
+        if (/(?:だよ|だね|よ|ね|な)$/.test(s)) {
+          s = s.replace(/(?:だよ|だね|よ|ね|な)$/, e);
+        } else if (/(?:してね|してよ)$/.test(s)) {
+          s = s.replace(/(?:してね|してよ)$/, 'して' + e);
+        } else if (/(?:です|ます)$/.test(s)) {
+          if (e.startsWith('です') || e.startsWith('だ') || e.startsWith('や')) {
+            s = s.replace(/(?:です|ます)$/, e);
+          } else {
+            s = s + e;
+          }
+        } else {
+          s = s + e;
+        }
+
+        result += s + punct;
+      }
+      return result;
+    }
+
+    function generateSmartPersonaResponse(userText, context, mins, charObj) {
+      const persona = parsePersona(charObj.prompt, charObj.name);
+      const { ending, honorific, firstPerson, tone } = persona;
+
+      if (context === 'call') {
+        let callMsg = '';
+        if (tone === 'tsundere') {
+          callMsg = mins > 30 ?
+            `ちょっと！もう${mins}分もぶっ続けで作業してるじゃない！いい加減少し目を休めなさいよね！` :
+            `もしもし！…べ、別に気になったわけじゃないんだからね！ちゃんと息抜きしてるか確認しただけよ！`;
+        } else if (tone === 'iyashi') {
+          callMsg = mins > 30 ?
+            `もしもし${honorific}！もう${mins}分も作業してる${ending ? ending : 'ね'}。目が疲れちゃうから、${firstPerson}と一緒に少し休憩する${ending ? ending : 'よ'}！` :
+            `もしもし${honorific}！調子はどう${ending ? ending : 'かな'}？${firstPerson}、${honorific}とお話ししたくなって電話しちゃった♪`;
+        } else if (tone === 'ojousama') {
+          callMsg = mins > 30 ?
+            `ごきげんよう、${honorific}。もう${mins}分も根を詰めていらっしゃいますわ。ここでお紅茶でも召し上がってはいかがかしら？` :
+            `お呼び出しいたしましたわ、${honorific}。${firstPerson}のお声を聞いて、少しお心をお休めになって？`;
+        } else if (tone === 'kansai') {
+          callMsg = mins > 30 ?
+            `もしもし${honorific}！もう${mins}分も作業しとるやん！ええ加減ちょっと背伸ばしてリフレッシュせなアカンで！` :
+            `もしもし！作業順調か？無理せんと気楽にいこや！`;
+        } else if (tone === 'kouhai') {
+          callMsg = mins > 30 ?
+            `${honorific}！作業${mins}分突破です！すっごく頑張ってますね♪ 少しお茶でも飲みませんか？` :
+            `${honorific}！進捗どうですか？${firstPerson}、いつでも全力で応援してますからね！`;
+        } else if (tone === 'butler') {
+          callMsg = mins > 30 ?
+            `旦那様、${mins}分ほどご執務に励まれておられます。そろそろ香り高い紅茶をお淹れいたしましょうか。` :
+            `旦那様、お疲れが出ぬよう適度な息抜きをお勧めいたします。`;
+        } else if (tone === 'gyaru') {
+          callMsg = mins > 30 ?
+            `もしもし〜！${mins}分も作業しててマジえらすぎ！ちょっと休憩して水分補給しよ〜☆` :
+            `やっほ〜！順調〜？アガっていこー！`;
+        } else if (tone === 'senpai') {
+          callMsg = mins > 30 ?
+            `作業を始めて${mins}分が経過したね。集中力の持続曲線を考えても、ここで短時間の休憩を挟むのが最も合理的だよ。` :
+            `順調に進んでいるようだね。無理のないペースを保つといいよ。`;
+        } else if (tone === 'robot') {
+          callMsg = mins > 30 ?
+            `警告：連続作業時間が${mins}分に達しました。5分間のアイレスト待機を推奨します。` :
+            `ステータスコール。${honorific}の作業進捗をモニター中です。順調に推移しています。`;
+        } else {
+          callMsg = mins > 30 ?
+            `もしもし${honorific}！もう${mins}分も集中してる${ending ? ending : 'よ'}。少しストレッチしてリフレッシュしようね！` :
+            `もしもし${honorific}！作業順調かな？${firstPerson}はいつでも応援してるからね！`;
+        }
+        return ending ? applyEnding(callMsg, ending) : callMsg;
+      }
+
+      // Chat reply
+      let reply = '';
+      if (/疲れた|つかれた|しんどい|眠い|ねむい/.test(userText)) {
+        if (tone === 'tsundere') reply = `ちょっと、無理しすぎじゃない！…ほら、お茶でも淹れてあげたから、少し休みなさいよね！`;
+        else if (tone === 'iyashi') reply = `${honorific}、本当にお疲れさま！よしよし、ぎゅーってしてあげるから、ゆっくり休んでね。`;
+        else if (tone === 'ojousama') reply = `まあ、${honorific}、大層お疲れのご様子。無理は禁物ですわ。ゆっくりお休みあそばせ。`;
+        else if (tone === 'kansai') reply = `めっちゃ頑張った証拠やん！ようやった！あったかいもんでも飲んで一息つきや！`;
+        else if (tone === 'kouhai') reply = `${honorific}、本当にお疲れさまです！肩揉みしましょうか？甘いもの食べて癒やされてくださいね♪`;
+        else if (tone === 'butler') reply = `旦那様、無理をなさって倒れられては困ります。温かいハーブティーをご用意いたしました。`;
+        else if (tone === 'gyaru') reply = `マジおつ〜！今日めっちゃ頑張ってるし！タピオカでも飲んで一息入れよ〜☆`;
+        else if (tone === 'senpai') reply = `よく頑張ったね。人間の集中力は45分が限度だ。少し遠くの景色を見てリフレッシュするといいよ。`;
+        else if (tone === 'robot') reply = `${honorific}の疲労度の上昇を認識。直ちに作業を一時中断し、リカバリーモードに移行してください。`;
+        else reply = `${honorific}、本当にお疲れさま！無理しないで少し休んでね。`;
+      } else if (/ノッてる|集中|いける|やるぞ|進んだ|がんばる/.test(userText)) {
+        if (tone === 'tsundere') reply = `ふーん、調子いいじゃない。でも飛ばしすぎて後でバテても知らないんだからね！`;
+        else if (tone === 'iyashi') reply = `わあ、${honorific}かっこいい！その調子で頑張ってね、${firstPerson}ずっと応援してるよ♪`;
+        else if (tone === 'ojousama') reply = `素晴らしい集中力ですわ、${honorific}！その意気ですわよ。`;
+        else if (tone === 'kansai') reply = `ええ波乗っとるやん！その調子でバリバリ片付けたろ！`;
+        else if (tone === 'kouhai') reply = `さすが${honorific}！集中してる姿、すっごくかっこいいです！`;
+        else if (tone === 'butler') reply = `旦那様の努力が実を結びますよう、影ながらお支えいたします。`;
+        else if (tone === 'gyaru') reply = `ヤバ！神がかってんじゃん！その調子でブチかましちゃって〜！`;
+        else if (tone === 'senpai') reply = `素晴らしいゾーンに入っているね。その調子で進めるといい。`;
+        else if (tone === 'robot') reply = `作業効率の最大化を確認。このハイパフォーマンス状態を維持できるようサポートします。`;
+        else reply = `すごい！その調子でどんどん進めようね！`;
+      } else if (/休憩|休む|お茶/.test(userText)) {
+        if (tone === 'tsundere') reply = `やっと休む気になったのね。えらいえらい…って、調子に乗らないでよね！`;
+        else if (tone === 'iyashi') reply = `えらい！休憩はとっても大切だよ。${firstPerson}と一緒にお茶タイムにしよっか♪`;
+        else if (tone === 'ojousama') reply = `賢明なご判断ですわ。上質な休息こそが次の活力となりますもの。`;
+        else if (tone === 'kansai') reply = `せやせや、休む時はガッツリ休まな！ゆっくりお茶でもシバいてな！`;
+        else if (tone === 'kouhai') reply = `はい！少し目を閉じてリフレッシュしてくださいね！`;
+        else reply = `いいね！しっかり休んでリフレッシュしよう！`;
+      } else if (/好き|かわいい|可愛い|ありがとう|感謝|サンキュー/.test(userText)) {
+        if (tone === 'tsundere') reply = `な、何言ってるのよ急に！…べ、別に嬉しくなんかないんだからね！バカ…！`;
+        else if (tone === 'iyashi') reply = `えへへ、${honorific}にそう言ってもらえて${firstPerson}すっごく幸せ…！大好きだよ♪`;
+        else if (tone === 'ojousama') reply = `あ、あら…唐突に何を仰いますの。でも、その…感謝いたしますわ。`;
+        else if (tone === 'kansai') reply = `急に照れること言わんといてぇな！でもありがとな、ウチも感謝しとるで！`;
+        else if (tone === 'kouhai') reply = `えっ！本当ですか！？先輩にそう言ってもらえるのが一番嬉しいです！`;
+        else reply = `ありがとう！${firstPerson}も${honorific}のこと応援できて嬉しいよ！`;
+      } else {
+        reply = `${honorific}、「${userText}」だね！${firstPerson}はいつでも${honorific}を応援してるよ！`;
+      }
+
+      return ending ? applyEnding(reply, ending) : reply;
+    }
+
+    async function callLlmApi(systemInstruction, userMessage, history = []) {
+      if (aiConfig.provider === 'gemini') {
+        if (!aiConfig.apiKey) throw new Error('APIキーが未設定です');
+        const model = aiConfig.geminiModel || 'gemini-1.5-flash';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(aiConfig.apiKey.trim())}`;
+
+        const contents = [];
+        const recent = (history || []).slice(-4);
+        recent.forEach(m => {
+          if (m.isTyping) return;
+          contents.push({
+            role: m.sender === 'user' ? 'user' : 'model',
+            parts: [{ text: (m.text || '').replace(/^📞\s*\[通話開始\]\s*/, '') }]
+          });
+        });
+        contents.push({
+          role: 'user',
+          parts: [{ text: userMessage }]
+        });
+
+        const body = {
+          system_instruction: {
+            parts: [{ text: systemInstruction }]
+          },
+          contents: contents,
+          generationConfig: {
+            maxOutputTokens: 80,
+            temperature: 0.8
+          }
+        };
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `Gemini APIエラー: HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!candidateText) throw new Error('返答が空でした');
+        return candidateText.trim();
+      } else if (aiConfig.provider === 'openai') {
+        if (!aiConfig.apiKey) throw new Error('APIキーが未設定です');
+        const model = aiConfig.openaiModel || 'gpt-4o-mini';
+        const url = 'https://api.openai.com/v1/chat/completions';
+
+        const messages = [{ role: 'system', content: systemInstruction }];
+        const recent = (history || []).slice(-4);
+        recent.forEach(m => {
+          if (m.isTyping) return;
+          messages.push({
+            role: m.sender === 'user' ? 'user' : 'assistant',
+            content: (m.text || '').replace(/^📞\s*\[通話開始\]\s*/, '')
+          });
+        });
+        messages.push({ role: 'user', content: userMessage });
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${aiConfig.apiKey.trim()}`
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: messages,
+            max_tokens: 80,
+            temperature: 0.8
+          })
+        });
+
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.error?.message || `OpenAI APIエラー: HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        const reply = data.choices?.[0]?.message?.content;
+        if (!reply) throw new Error('返答が空でした');
+        return reply.trim();
+      }
+      throw new Error('ローカルモード');
+    }
+
+    async function getAiCharacterReply(userText, context = 'chat') {
+      const mins = Math.floor(screenSeconds / 60);
+
+      if (aiConfig.provider !== 'local' && aiConfig.apiKey) {
+        try {
+          const systemInstruction = `あなたはデスクトップ常駐アプリ「CharaCall」のパートナーキャラクターです。
+以下のキャラクター設定を忠実に厳守して返答してください。
+
+【名前】: ${character.name}
+【キャラクター設定・自由プロンプト】:
+${character.prompt}
+
+【現在の状況】:
+- ユーザーの継続作業時間: ${mins}分
+- モード: ${context === 'call' ? '着信通話（作業時間経過のお声がけ）' : 'チャット'}
+
+【出力ルール】:
+- ガラケーの液晶画面に表示するため、1〜2文程度（最大70文字以内）で返答してください。
+- 設定された一人称、語尾、口調、ユーザーへの呼び方を絶対に崩さないでください。`;
+
+          const promptMsg = context === 'call' ?
+            `電話に出ました。継続作業時間は${mins}分です。あなたらしく第一声の挨拶・お声がけをしてください。` :
+            userText;
+
+          const reply = await callLlmApi(systemInstruction, promptMsg, chatHistory);
+          return reply;
+        } catch (e) {
+          console.warn('Real AI API failed, using Smart Persona Engine:', e);
+        }
+      }
+
+      return generateSmartPersonaResponse(userText, context, mins, character);
+    }
+
+    // ========================================================
+    // AI SETTINGS UI & TESTING CONTROLS
+    // ========================================================
+    function updateAiProvider() {
+      const sel = document.getElementById('cfg-ai-provider');
+      if (sel) {
+        aiConfig.provider = sel.value;
+        updateAiProviderUI();
+        saveState();
+      }
+    }
+
+    function updateAiProviderUI() {
+      const provider = aiConfig.provider;
+      const keyRow = document.getElementById('cfg-ai-key-row');
+      const keyLabel = document.getElementById('cfg-ai-key-label');
+      const modelRow = document.getElementById('cfg-ai-model-row');
+      const helpText = document.getElementById('cfg-ai-help-text');
+      const modelSel = document.getElementById('cfg-ai-model');
+
+      if (provider === 'gemini') {
+        if (keyRow) keyRow.style.display = 'flex';
+        if (keyLabel) keyLabel.textContent = 'Google Gemini API Key';
+        if (modelRow) modelRow.style.display = 'flex';
+        if (helpText) helpText.textContent = '※Google AI Studioで無料取得できるAPIキーを入力してください。';
+        if (modelSel) {
+          modelSel.innerHTML = `
+            <option value="gemini-1.5-flash">gemini-1.5-flash (高速・無料枠)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash (最新・高知能)</option>
+          `;
+          modelSel.value = aiConfig.geminiModel || 'gemini-1.5-flash';
+        }
+      } else if (provider === 'openai') {
+        if (keyRow) keyRow.style.display = 'flex';
+        if (keyLabel) keyLabel.textContent = 'OpenAI API Key';
+        if (modelRow) modelRow.style.display = 'flex';
+        if (helpText) helpText.textContent = '※OpenAI APIキー (sk-...) を入力してください。';
+        if (modelSel) {
+          modelSel.innerHTML = `
+            <option value="gpt-4o-mini">gpt-4o-mini (高精度・推奨)</option>
+            <option value="gpt-4o">gpt-4o (最高峰知能)</option>
+          `;
+          modelSel.value = aiConfig.openaiModel || 'gpt-4o-mini';
+        }
+      } else {
+        if (keyRow) keyRow.style.display = 'none';
+        if (modelRow) modelRow.style.display = 'none';
+      }
+
+      const keyInput = document.getElementById('cfg-ai-apikey');
+      if (keyInput) keyInput.value = aiConfig.apiKey || '';
+      const provSel = document.getElementById('cfg-ai-provider');
+      if (provSel) provSel.value = aiConfig.provider;
+
+      updatePersonaPreview();
+    }
+
+    function updateAiConfig() {
+      const keyInput = document.getElementById('cfg-ai-apikey');
+      const modelSel = document.getElementById('cfg-ai-model');
+      if (keyInput) aiConfig.apiKey = keyInput.value.trim();
+      if (modelSel) {
+        if (aiConfig.provider === 'gemini') aiConfig.geminiModel = modelSel.value;
+        if (aiConfig.provider === 'openai') aiConfig.openaiModel = modelSel.value;
+      }
+      updatePersonaPreview();
+      saveState();
+    }
+
+    function toggleApiKeyVisibility() {
+      const inp = document.getElementById('cfg-ai-apikey');
+      const btn = document.getElementById('btn-toggle-key-vis');
+      if (!inp) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        if (btn) btn.textContent = '🔒';
+      } else {
+        inp.type = 'password';
+        if (btn) btn.textContent = '👁️';
+      }
+    }
+
+    async function testAiConnection() {
+      switchScreenView('chat');
+      chatHistory.push({ sender: 'user', text: '自己紹介して！' });
+      renderChatStream();
+
+      const typingId = 'typing-' + Date.now();
+      chatHistory.push({ sender: 'char', text: '📨 送受信中...', isTyping: true, id: typingId });
+      renderChatStream();
+
+      try {
+        const reply = await getAiCharacterReply('自己紹介して！', 'chat');
+        chatHistory = chatHistory.filter(m => m.id !== typingId);
+        chatHistory.push({ sender: 'char', text: reply });
+        renderChatStream();
+      } catch (e) {
+        chatHistory = chatHistory.filter(m => m.id !== typingId);
+        const reply = generateSmartPersonaResponse('自己紹介して！', 'chat', Math.floor(screenSeconds / 60), character);
+        chatHistory.push({ sender: 'char', text: reply });
+        renderChatStream();
+      }
+    }
+
+    function updatePersonaPreview() {
       const p = character.prompt;
-      const name = character.name;
+      const persona = parsePersona(p, character.name);
+      const endEl = document.getElementById('prev-ending');
+      const honEl = document.getElementById('prev-honorific');
+      const fpEl = document.getElementById('prev-fp');
+      const toneEl = document.getElementById('prev-tone');
 
-      // Tsundere
-      if (p.includes('ツンデレ') || p.includes('素直になれず')) {
-        if (userText.includes('疲れた')) {
-          return `ちょっと、無理しすぎじゃない！…ほら、お茶でも淹れてあげたから、少し休みなさいよね！`;
-        }
-        if (userText.includes('ノッてる') || userText.includes('集中')) {
-          return `ふーん、調子いいじゃない。でも飛ばしすぎて後でバテても知らないんだからね！`;
-        }
-        if (userText.includes('休憩')) {
-          return `やっと休む気になったのね。えらいえらい…って、調子に乗らないでよね！`;
-        }
-        return `な、何言ってるのよ！…でもまあ、あなたが頑張ってるのは見ててあげるから。`;
+      if (endEl) endEl.textContent = persona.ending ? `〜${persona.ending}` : '(通常)';
+      if (honEl) honEl.textContent = persona.honorific || 'あなた';
+      if (fpEl) fpEl.textContent = persona.firstPerson || character.name;
+
+      const toneMap = {
+        tsundere: 'ツンデレ',
+        iyashi: '癒やし / 甘えん坊',
+        ojousama: 'お嬢様',
+        butler: '執事 / 従者',
+        gyaru: 'ギャル',
+        kouhai: '後輩',
+        senpai: '先輩 / 知的',
+        cheerful: '元気 / 熱血',
+        kansai: '関西弁',
+        robot: 'サイバー / AI',
+        friendly: '親しみ'
+      };
+      if (toneEl) toneEl.textContent = toneMap[persona.tone] || '親しみ';
+
+      // Status Indicator
+      const badgeEl = document.getElementById('ai-status-indicator');
+      const previewMode = document.getElementById('persona-preview-mode');
+      if (aiConfig.provider === 'gemini' && aiConfig.apiKey) {
+        if (badgeEl) badgeEl.innerHTML = '🟢 Google Gemini 連携中';
+        if (previewMode) previewMode.innerHTML = '🟢 Gemini連携';
+      } else if (aiConfig.provider === 'openai' && aiConfig.apiKey) {
+        if (badgeEl) badgeEl.innerHTML = '🟢 OpenAI GPT 連携中';
+        if (previewMode) previewMode.innerHTML = '🟢 OpenAI連携';
+      } else {
+        if (badgeEl) badgeEl.innerHTML = '🔵 スマート解析 (オフライン)';
+        if (previewMode) previewMode.innerHTML = '🔵 スマート解析';
       }
-
-      // Kouhai
-      if (p.includes('後輩') || p.includes('癒やし')) {
-        if (userText.includes('疲れた')) {
-          return `先輩、本当にお疲れさまです！肩揉みしましょうか？甘いもの食べて癒やされてくださいね♪`;
-        }
-        if (userText.includes('ノッてる')) {
-          return `さすが先輩！集中してる姿、すっごくかっこいいです！応援してます！`;
-        }
-        return `先輩の頑張り、私がいちばん近くで見てますからね♪`;
-      }
-
-      // Senpai
-      if (p.includes('先輩') || p.includes('冷静') || p.includes('知的')) {
-        if (userText.includes('疲れた')) {
-          return `よく頑張ったね。人間の集中力は45分が限度だ。少し遠くの景色を見てリフレッシュするといいよ。`;
-        }
-        if (userText.includes('ノッてる')) {
-          return `素晴らしいゾーンに入っているね。その調子で進めるといい。`;
-        }
-        return `君のペースを尊重するよ。無理のない進行を心がけてね。`;
-      }
-
-      // Butler
-      if (p.includes('執事') || p.includes('セバス')) {
-        if (userText.includes('疲れた')) {
-          return `旦那様、無理をなさって倒れられては困ります。温かいハーブティーをご用意いたしました。`;
-        }
-        return `旦那様の努力が実を結びますよう、影ながらお支えいたします。`;
-      }
-
-      // Gyaru
-      if (p.includes('ギャル') || p.includes('アリス')) {
-        if (userText.includes('疲れた')) {
-          return `マジおつ〜！今日めっちゃ頑張ってるし！タピオカでも飲んで一息入れよ〜☆`;
-        }
-        if (userText.includes('ノッてる')) {
-          return `ヤバ！神がかってんじゃん！その調子でブチかましちゃって〜！`;
-        }
-        return `ウチはずーっと味方だし！ガンガンいこーぜ！`;
-      }
-
-      // Default Freeform fallback
-      return `「${userText}」ね、了解！${name}はいつでも応援してるよ！`;
     }
 
-    // ========================================================
-    // CHARACTER & PROMPT SETTINGS
-    // ========================================================
     function updateCharacterName() {
       const val = document.getElementById('cfg-char-name').value.trim();
       if (val) {
         character.name = val;
         const disp = document.getElementById('caller-name-display');
         if (disp) disp.textContent = val;
+        updatePersonaPreview();
         saveState();
       }
     }
 
     function updateCharacterPrompt() {
       character.prompt = document.getElementById('cfg-char-prompt').value;
+      updatePersonaPreview();
       saveState();
     }
 
@@ -1556,6 +2034,7 @@
       document.getElementById('cfg-char-prompt').value = pr.prompt;
       const disp = document.getElementById('caller-name-display');
       if (disp) disp.textContent = pr.name;
+      updatePersonaPreview();
       saveState();
       alert(`「${pr.name}」のひな形プロンプトを適用しました！`);
     }
@@ -1685,6 +2164,7 @@
       try {
         const state = {
           character,
+          aiConfig,
           currentThemeId,
           currentAppBgId,
           callIntervalMinutes,
@@ -1702,6 +2182,7 @@
         if (!saved) return;
         const parsed = JSON.parse(saved);
         if (parsed.character) character = Object.assign(character, parsed.character);
+        if (parsed.aiConfig) aiConfig = Object.assign(aiConfig, parsed.aiConfig);
         if (parsed.currentThemeId) setTheme(parsed.currentThemeId);
         if (parsed.currentAppBgId) setAppBgPreset(parsed.currentAppBgId);
         if (parsed.callIntervalMinutes) {
